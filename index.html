@@ -343,6 +343,7 @@ table.simple td{padding:9px 10px;border-bottom:1px solid var(--border)}
 <main class="main" id="main">
   <section class="view active" id="view-dashboard"></section>
   <section class="view" id="view-roadmap"></section>
+  <section class="view" id="view-step"></section>
   <section class="view" id="view-careermap"></section>
   <section class="view" id="view-careers"></section>
   <section class="view" id="view-module"></section>
@@ -3862,7 +3863,7 @@ RENDER.daysim=el=>{
  (prog.i>=DAYSIM.length?`<div class="card interp-card"><div class="score-big" style="color:var(--accent)">${Math.round(prog.score/(DAYSIM.length*2)*100)}%</div><p style="color:var(--ink2)">Hết ngày làm việc! 下班了，辛苦了！</p><div class="srs-btns"><button class="btn" onclick="DAYRESET()">Làm lại một ngày mới</button></div></div>`:'');
  const slot=el.querySelector('.mcq-slot');
  if(slot){mountMCQ(slot,DAYSIM[prog.i].opts,sc=>{prog.score+=sc;$('#dayNext').hidden=false;});
-  $('#dayNext').onclick=()=>{prog.i++;if(prog.i>=DAYSIM.length){S.done.day.completed=true;save();addXP(40,'office');}RENDER.daysim(el);window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});};}
+  $('#dayNext').onclick=()=>{prog.i++;if(prog.i>=DAYSIM.length){const pct=Math.round(prog.score/(DAYSIM.length*2)*100);S.done.day.completed=true;if(!(S.done.day.score>=pct))S.done.day.score=pct;if(pct>(S.done.day.score||0))S.done.day.score=pct;save();addXP(40,'office');}RENDER.daysim(el);window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});};}
 };
 window.DAYRESET=()=>{const el=$('#view-daysim');el._p={i:0,score:0};RENDER.daysim(el);};
 
@@ -4043,18 +4044,133 @@ const ROADMAP2=[
  {k:'s8e',t:'My Vocabulary đạt 50 từ đã lưu + ôn SRS đều đặn',d:'Lưu đủ 50 từ và duy trì ôn tập — nền của trí nhớ dài hạn.',go:['review'],auto:'saved:50',tag:'Duy trì'}]}
 ];
 
+/* Mỗi bước tự học có bài KIỂM TRA CHỐT — đúng 100% mới được tính ✓ */
+const QUIZMAP={
+ s1a:{type:'vocab',ind:'core',gs:['num']}, s1b:{type:'vocab',ind:'core',gs:['time']},
+ s1c:{type:'vocab',ind:'core',gs:['greet']}, s1d:{type:'mist'}, s1e:{type:'sent',ind:'core'},
+ s2a:{type:'vocab',ind:'core',gs:['verb']}, s2b:{type:'vocab',ind:'core',gs:['adj']},
+ s2c:{type:'vocab',ind:'core',gs:['polite','title']}, s2d:{type:'dlg',ids:['d2','d4']}, s2e:{type:'phrase'},
+ s3a:{type:'vocab',ind:'mfg',gs:['prod','qc']}, s3b:{type:'vocab',ind:'mfg',gs:['machine','material','safety']},
+ s4a:{type:'vocab',ind:'office',gs:['meeting','doc','task']}, s4b:{type:'vocab',ind:'office',gs:['pay','it','travel']},
+ s5a:{type:'vocab',ind:'trade',gs:['sourcing','price','order']}, s5b:{type:'vocab',ind:'trade',gs:['logistics','customs','payment','bank']},
+ s6a:{type:'vocab',ind:'interp'}, s6b:{type:'interpq',set:'ip1'}, s6c:{type:'interpq',set:'ip2'}, s6d:{type:'interpq',set:'ip4'},
+ s7a:{type:'vocab',ind:'nego'}, s7b:{type:'negoexpr',ids:['price','delivery']},
+ s7c:{type:'negoexpr',ids:['quality','contract','payment','complaint']}, s7f:{type:'interpq',set:'ip3'}
+};
+const AUTOREQ={lesson:'hoàn thành đủ 10 bước bài học',scen:'đạt điểm tuyệt đối (chọn phương án tốt nhất ở mọi bước)',rp:'đạt ≥ 90/100 điểm',mission:'đạt 100% điểm mission',day:'xử lý chuẩn cả 7 mốc (100%)',saved:'lưu đủ số từ yêu cầu'};
 function stepDone(st){
  if(st.auto){
   const [kind,id]=st.auto.split(':');
   if(kind==='lesson')return !!S.done.lesson[id];
-  if(kind==='scen')return S.done.scen[id]!=null;
-  if(kind==='rp')return S.done.rp[id]!=null;
-  if(kind==='mission')return S.done.mission[id]!=null;
-  if(kind==='day')return !!S.done.day.completed;
+  if(kind==='scen'){const sc=SCENARIOS.find(x=>x.id===id);return S.done.scen[id]===sc.steps.length*2;}
+  if(kind==='rp')return (S.done.rp[id]||0)>=90;
+  if(kind==='mission')return S.done.mission[id]===100;
+  if(kind==='day')return !!S.done.day.completed&&S.done.day.score===100;
   if(kind==='saved')return Object.keys(S.saved).length>=+id;
  }
  return !!(S.done.road&&S.done.road[st.k]);
 }
+/* ===== CHECKPOINT QUIZ ENGINE ===== */
+const MISTQUIZ=[
+ {p:'Chọn lượng từ đúng: 一___生产线',o:['条','个','台','张'],a:0},
+ {p:'Chọn lượng từ đúng: 一___机器',o:['台','条','份','批'],a:0},
+ {p:'打九折 nghĩa là gì?',o:['Giảm 10% (còn 90% giá)','Giảm 90%','Tăng 10%','Trả góp 9 lần'],a:0},
+ {p:'Câu nào ĐÚNG trật tự?',o:['我八点到工厂','我到工厂八点','八点我工厂到','到工厂我八点'],a:0},
+ {p:'Câu nào ĐÚNG? (phủ định với 没)',o:['货还没到','货还没到了','货没还到','货还不到了'],a:0},
+ {p:'Câu nào ĐÚNG? (động từ ly hợp)',o:['帮他的忙','帮忙他','帮忙了他','他帮忙我'],a:0},
+ {p:'Nói với sếp/khách nên dùng từ nào?',o:['您','你','咱','他'],a:0},
+ {p:'Chủ động DỜI lịch họp dùng từ nào chuẩn?',o:['推迟','延迟','迟到','延误'],a:0},
+ {p:'Trạng ngữ trước động từ dùng chữ nào? 认真___工作',o:['地','的','得','了'],a:0},
+ {p:'Từ chối khéo trong đàm phán nên nói:',o:['恐怕有困难','不行！','不可能','没门'],a:0}
+];
+function shuffleA(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function buildQuiz(spec){
+ const mk=(prompt,sub,correct,pool)=>{
+  const ds=shuffleA(pool.filter(x=>x!==correct&&x)).slice(0,3);
+  const opts=shuffleA([correct,...ds]);
+  return {prompt,sub,opts,a:opts.indexOf(correct)};
+ };
+ let qs=[];
+ if(spec.type==='vocab'){
+  let ws=V.filter(w=>w.ind===spec.ind&&(!spec.gs||spec.gs.includes(w.g)));
+  const pool=ws.map(w=>w.v);
+  qs=shuffleA(ws).slice(0,10).map(w=>mk(w.h,w.p,w.v,pool));
+ }
+ if(spec.type==='sent'){
+  const ss=SENTENCES.filter(s=>s[3]===spec.ind);const pool=ss.map(s=>s[2]);
+  qs=shuffleA(ss).slice(0,8).map(s=>mk(s[0],s[1],s[2],pool));
+ }
+ if(spec.type==='phrase'){
+  const pool=PHRASES.map(p=>p[2]);
+  qs=shuffleA(PHRASES).slice(0,8).map(p=>mk(p[0],p[1],p[2],pool));
+ }
+ if(spec.type==='dlg'){
+  let lines=[];spec.ids.forEach(id=>{const d=DMAP[id];d&&d.lines.forEach(L=>{if(L[1].length>5&&L[3].length>8)lines.push(L);});});
+  const pool=lines.map(L=>L[3]);
+  qs=shuffleA(lines).slice(0,8).map(L=>mk(L[1],L[2],L[3],pool));
+ }
+ if(spec.type==='negoexpr'){
+  let ex=[];NEGO.filter(n=>spec.ids.includes(n.id)).forEach(n=>ex=ex.concat(n.expr));
+  const pool=ex.map(e=>e[2]);
+  qs=shuffleA(ex).slice(0,8).map(e=>mk(e[0],e[1],e[2],pool));
+ }
+ if(spec.type==='interpq'){
+  const set=INTERP.find(x=>x.id===spec.set);
+  const poolVi=set.items.filter(x=>x.dir==='zv').map(x=>x.ans);
+  const poolZh=set.items.filter(x=>x.dir==='vz').map(x=>x.ans);
+  const extraVi=SENTENCES.map(s=>s[2]),extraZh=SENTENCES.map(s=>s[0]);
+  qs=shuffleA(set.items).map(it=>{
+   if(it.dir==='zv'){const q=mk(it.src,it.p||'',it.ans,poolVi.length>3?poolVi:poolVi.concat(extraVi));q.plain=false;return q;}
+   const q=mk(it.src,'→ Chọn câu tiếng Trung dịch đúng',it.ans,poolZh.length>3?poolZh:poolZh.concat(extraZh));q.plain=true;q.zhOpts=true;return q;});
+ }
+ if(spec.type==='mist'){
+  qs=shuffleA(MISTQUIZ).map(m=>{const opts=shuffleA(m.o.map((t,i)=>({t,ok:i===m.a})));return {prompt:m.p,sub:'',opts:opts.map(o=>o.t),a:opts.findIndex(o=>o.ok),plain:true};});
+ }
+ return qs;
+}
+window.ROADQUIZ=(i,k)=>{
+ if(!stageUnlocked(i)){toast('🔒 Hoàn thành giai đoạn trước để mở khóa');return;}
+ const st=ROADMAP2[i].steps.find(x=>x.k===k);
+ const qs=buildQuiz(QUIZMAP[k]);
+ if(!qs.length){toast('Không tạo được bài kiểm tra');return;}
+ let idx=0,correct=0;
+ window.__qa=()=>qs[idx]?qs[idx].a:-1;
+ const draw=()=>{
+  const q=qs[idx];
+  $('#modalBox').innerHTML=`
+  <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)">Kiểm tra chốt · cần đúng 100%</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px"><b style="font-size:15px">${esc(st.t)}</b><span class="num" style="font-size:12px;color:var(--ink3)">Câu ${idx+1}/${qs.length} · đúng ${correct}</span></div>
+  <div class="bar" style="margin-bottom:14px"><i style="width:${idx/qs.length*100}%"></i></div>
+  <div class="${q.plain?'':'zh'}" style="font-size:${q.plain?'15px':'24px'};font-weight:700;line-height:1.5">${esc(q.prompt)}</div>
+  ${q.sub&&!q.plain?`<div class="dlg-pinyin" style="margin:2px 0 4px">${esc(q.sub)}</div>`:''}
+  <div style="margin-top:12px">${q.opts.map((o,j)=>`<button class="mcq-opt" onclick="QANS(this,${j})"><span class="key">${'ABCD'[j]}</span><span class="${q.zhOpts?'zh':''}" style="font-size:${q.zhOpts?'15px':'13.5px'}">${esc(o)}</span></button>`).join('')}</div>
+  <div class="q-fb"></div>`;
+  $('#modalScrim').classList.add('show');
+ };
+ window.QANS=(btn,j)=>{
+  const q=qs[idx];const box=btn.parentElement;
+  if(box._done)return;box._done=true;
+  [...box.children].forEach(b=>b.disabled=true);
+  const ok=j===q.a;
+  btn.classList.add(ok?'correct':'wrong');
+  if(!ok)box.children[q.a].classList.add('correct');
+  if(ok)correct++;
+  setTimeout(()=>{idx++;if(idx<qs.length)draw();else finish();},ok?500:1400);
+ };
+ const finish=()=>{
+  const pass=correct===qs.length;
+  if(pass){S.done.road=S.done.road||{};S.done.road[k]=true;save();addXP(12);}
+  $('#modalBox').innerHTML=`<div style="text-align:center;padding:10px 0">
+   <div class="score-big" style="color:${pass?'var(--good)':'var(--bad)'}">${correct}/${qs.length}</div>
+   <b style="font-size:16px">${pass?'✓ Đạt 100% — bước này đã hoàn thành!':'Chưa đạt 100%'}</b>
+   <p style="color:var(--ink2);font-size:13.5px;margin-top:6px">${pass?'Bước tiếp theo đã sẵn sàng trong lộ trình.':'Cần đúng toàn bộ mới được tính ✓. Ôn lại phần này rồi kiểm tra lại — câu hỏi sẽ được xáo trộn.'}</p>
+   <div class="srs-btns">
+    ${pass?`<button class="btn btn-primary" onclick="closeModal();GO('roadmap')">Về lộ trình →</button>`
+    :`<button class="btn" onclick="closeModal();ROADGO(${i},'${k}')">Ôn lại</button><button class="btn btn-primary" onclick="ROADQUIZ(${i},'${k}')">Kiểm tra lại</button>`}
+   </div></div>`;
+ };
+ draw();
+};
 function stageDone(i){return ROADMAP2[i].steps.every(stepDone)}
 function stageUnlocked(i){return S.freeMode||i===0||stageDone(i-1)}
 function nextRoadStep(){
@@ -4062,12 +4178,108 @@ function nextRoadStep(){
   for(const st of ROADMAP2[i].steps){if(!stepDone(st))return {stage:i,st};}}
  return null;
 }
-window.ROADDONE=k=>{S.done.road=S.done.road||{};S.done.road[k]=true;save();addXP(6);RENDER.roadmap($('#view-roadmap'));};
+/* Không còn tự đánh dấu — mọi bước đều phải qua kiểm tra hoặc bài tập đạt chuẩn */
 window.ROADGO=(i,k)=>{
  if(!stageUnlocked(i)){toast('🔒 Hoàn thành giai đoạn trước để mở khóa');return;}
- const st=ROADMAP2[i].steps.find(x=>x.k===k);
- GO(st.go[0],st.go[1]);
+ GO('step',{i,k});
 };
+
+/* ================= STEP PLAYER — flow: Giới thiệu → Học → Kiểm tra ================= */
+function stepOutcomes(st){
+ const sp=QUIZMAP[st.k];
+ if(st.auto){
+  const kind=st.auto.split(':')[0];
+  const map={lesson:['Đi trọn 10 bước: từ vựng → hội thoại → nghe nói → phiên dịch → roleplay','Xử lý được tình huống này ngoài đời bằng tiếng Trung'],
+   scen:['Chọn được phương án xử lý TỐT NHẤT ở từng bước','Hiểu vì sao các phương án khác kém hơn (đọc phản hồi từng lựa chọn)'],
+   rp:['Đối đáp trọn cuộc hội thoại với nhân vật AI gây áp lực','Đạt ≥90/100 điểm — gần như phải chọn phương án tối ưu ở mọi lượt'],
+   mission:['Ra quyết định đúng ở mọi mắt xích liên ngành','Đạt 100% điểm mission'],
+   day:['Xử lý chuẩn cả 7 mốc giờ của một ngày làm việc','Đạt 100% — như một nhân viên kỳ cựu'],
+   saved:['Xây kho từ cá nhân đủ lớn cho SRS hoạt động','Duy trì thói quen ôn tập hằng ngày']};
+  return map[kind]||[];
+ }
+ if(!sp)return [];
+ if(sp.type==='vocab'){const ws=stepWords(sp);const nco=ws.reduce((a,w)=>a+(w.co?w.co.length:0),0);
+  return [`Đọc đúng (pinyin + thanh điệu) và hiểu nghĩa ${ws.length} từ trọng tâm`,`Dùng được ${nco} cụm từ đi kèm trong câu thực tế`,`Vượt bài kiểm tra ${Math.min(10,ws.length)} câu với kết quả 100%`];}
+ if(sp.type==='sent')return ['Nghe hiểu từng câu không cần nhìn chữ','Shadowing trôi chảy: nghe 0.6x → nói theo → nghe 1x','Vượt kiểm tra chọn nghĩa 8 câu (100%)'];
+ if(sp.type==='phrase')return ['Thuộc các khung câu mở lời chuyên nghiệp (我们建议…, 关于这个问题…)','Biết mỗi khung câu dùng trong hoàn cảnh nào','Vượt kiểm tra 8 câu (100%)'];
+ if(sp.type==='dlg')return ['Nghe hiểu toàn bộ hội thoại không cần nhìn chữ','Đóng vai 我 và đọc trôi phần của mình','Vượt kiểm tra hiểu nội dung (100%)'];
+ if(sp.type==='mist')return ['Nhận diện và tránh các lỗi kinh điển của người Việt (thanh điệu, 的得地, 了, 把/被, lượng từ)','Vượt 10 câu trắc nghiệm sửa lỗi (100%)'];
+ if(sp.type==='negoexpr')return ['Dùng đúng ngữ cảnh các mẫu câu đàm phán của chuyên đề','Nắm chiến thuật đi kèm từng chuyên đề','Vượt kiểm tra (100%)'];
+ if(sp.type==='interpq'){const set=INTERP.find(x=>x.id===sp.set);return [`Dịch nói hai chiều ${set.items.length} câu của bộ "${set.name}"`,'Phản xạ dịch không cần nhìn đáp án','Vượt kiểm tra chọn bản dịch đúng (100%)'];}
+ return [];
+}
+function stepWords(sp){return V.filter(w=>w.ind===sp.ind&&(!sp.gs||sp.gs.includes(w.g)));}
+function stepContentHTML(st){
+ const sp=QUIZMAP[st.k];
+ if(!sp)return '';
+ if(sp.type==='vocab'){
+  const ws=stepWords(sp);
+  const groups=META.groups[sp.ind]||[];
+  let html='';
+  (sp.gs||[...new Set(ws.map(w=>w.g))]).forEach(g=>{
+   const gw=ws.filter(w=>w.g===g);if(!gw.length)return;
+   const gn=(groups.find(x=>x[0]===g)||[g,g])[1];
+   html+=`<div class="section-label">${gn} · ${gw.length} từ</div><div class="grid g3">${gw.map(vocabCard).join('')}</div>`;});
+  return html+`<div class="card card-pad" style="margin-top:16px;font-size:13px;color:var(--ink2)">💡 Cách học: bấm từng thẻ xem cụm đi kèm + ví dụ → bấm ▸ nghe, đọc to theo → từ nào khó bấm ☆ lưu vào SRS. Học xong quay lại làm kiểm tra.</div>`;
+ }
+ if(sp.type==='sent'){
+  const ss=SENTENCES.filter(s=>s[3]===sp.ind);
+  return `<div class="card">${ss.map(s=>`<div class="expr-item" style="padding:12px 18px"><div style="flex:1"><div class="zh dlg-zh">${esc(s[0])}</div><div class="dlg-pinyin">${esc(s[1])}</div><div class="vi" style="font-size:13px">${esc(s[2])}</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span class="chip chip-core">${esc(s[4])}</span>${spkBtns(s[0])}</div></div>`).join('')}</div>`;
+ }
+ if(sp.type==='phrase'){
+  return `<div class="card">${PHRASES.map(p=>`<div class="expr-item" style="padding:12px 18px"><div style="flex:1"><div class="zh dlg-zh">${esc(p[0])}</div><div class="dlg-pinyin">${esc(p[1])}</div><div class="vi" style="font-size:13px">${esc(p[2])}</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span class="chip chip-core">${esc(p[3])}</span>${spkBtns(p[0])}</div></div>`).join('')}</div>`;
+ }
+ if(sp.type==='dlg')return sp.ids.map(id=>dlgCardHTML(DMAP[id])).join('');
+ if(sp.type==='mist')return MISTAKES.map(sec=>`<div class="card card-pad" style="margin-bottom:14px"><b style="font-size:15px">${esc(sec.title)}</b>${sec.items.map(it=>`<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);font-size:13.5px"><div><span class="chip chip-nego">Sai / kém tự nhiên</span> <span class="zh">${esc(it[0])}</span></div><div style="margin-top:5px"><span class="chip chip-good">Đúng</span> <span>${esc(it[1])}</span></div></div>`).join('')}</div>`).join('');
+ if(sp.type==='negoexpr'){
+  return NEGO.filter(n=>sp.ids.includes(n.id)).map(n=>`
+   <div class="section-label">${n.name} · ${n.zh}</div>
+   <div class="card">${n.expr.map(e=>`<div class="expr-item" style="padding:12px 18px"><div style="flex:1"><div class="zh dlg-zh">${esc(e[0])}</div><div class="dlg-pinyin">${esc(e[1])}</div><div class="vi" style="font-size:13px">${esc(e[2])}</div></div>${spkBtns(e[0])}</div>`).join('')}</div>
+   <div class="card card-pad" style="margin-top:10px;border-left:3px solid var(--warn);font-size:13px">${esc(n.tips)}</div>`).join('');
+ }
+ if(sp.type==='interpq'){
+  setTimeout(()=>{const box=$('#stepInterp');if(box){const set=INTERP.find(x=>x.id===sp.set);runInterp(box,set.items,()=>{});}},0);
+  return `<div class="card card-pad" style="margin-bottom:12px;font-size:13px;color:var(--ink2)">Luyện trước — dịch thành tiếng từng câu, tự chấm. Sau đó làm bài kiểm tra chốt (chọn bản dịch đúng, cần 100%).</div><div id="stepInterp"></div>`;
+ }
+ return '';
+}
+RENDER.step=(el,ctx)=>{
+ if(ctx){el._ctx=ctx;el._phase='brief';} ctx=el._ctx; if(!ctx)return GO('roadmap');
+ const {i,k}=ctx; const sg=ROADMAP2[i]; const st=sg.steps.find(x=>x.k===k);
+ const idx=sg.steps.indexOf(st); const d=stepDone(st); const sp=QUIZMAP[k];
+ const phase=el._phase||'brief';
+ const outcomes=stepOutcomes(st);
+ let body='';
+ if(phase==='brief'){
+  body=`<div class="card card-pad" style="max-width:760px">
+   ${d?`<div class="feedback good" style="margin-bottom:14px">✓ Bước này bạn đã hoàn thành — xem lại thoải mái.</div>`:''}
+   <div class="section-label" style="margin-top:0">📖 Phần này học gì</div>
+   <p style="font-size:14.5px;line-height:1.7">${esc(st.d)}</p>
+   <div class="section-label">🎯 Sau khi học xong, bạn sẽ</div>
+   ${outcomes.map(o=>`<div style="display:flex;gap:10px;padding:5px 0;font-size:14px"><span style="color:var(--good);font-weight:800">✓</span><span>${esc(o)}</span></div>`).join('')}
+   <div class="section-label">🏁 Điều kiện hoàn thành</div>
+   <p style="font-size:13.5px;color:var(--ink2)">${st.auto?`Bước này gắn với bài tập thật — tự đánh dấu ✓ khi bạn ${AUTOREQ[st.auto.split(':')[0]]}.`:'Làm bài kiểm tra chốt ở cuối và đúng 100%. Sai thì ôn lại rồi kiểm tra lại — câu hỏi sẽ xáo trộn, không thể học vẹt đáp án.'}</p>
+   <div class="lesson-nav" style="margin-top:18px">
+    <button class="btn" onclick="GO('roadmap')">← Lộ trình</button>
+    <button class="btn btn-primary" onclick="STEPPHASE('learn')">${st.auto?'Bắt đầu →':'Bắt đầu học →'}</button>
+   </div></div>`;
+ }else{
+  if(st.auto){
+   GO(st.go[0],st.go[1]);el._phase='brief';return;
+  }
+  body=stepContentHTML(st)+
+  `<div class="card card-pad" style="margin-top:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-left:4px solid var(--accent)">
+   <div style="flex:1;min-width:220px"><b>✍ Kiểm tra chốt</b><div style="font-size:12.5px;color:var(--ink2)">Cần đúng 100% để bước này được đánh dấu ✓ trong lộ trình.</div></div>
+   <button class="btn btn-primary" onclick="ROADQUIZ(${i},'${k}')">Làm kiểm tra →</button></div>
+  <div class="lesson-nav"><button class="btn" onclick="STEPPHASE('brief')">← Giới thiệu</button><button class="btn btn-ghost" onclick="GO('roadmap')">Về lộ trình</button></div>`;
+ }
+ el.innerHTML=`<button class="btn btn-ghost btn-sm" onclick="GO('roadmap')">← Lộ trình</button>
+ ${pageHead('Giai đoạn '+String(i+1).padStart(2,'0')+' '+sg.zh+' · bước '+(idx+1)+'/'+sg.steps.length,sg.zh.charAt(0),st.t,'')}
+ <div style="display:flex;gap:8px;margin:-8px 0 16px"><span class="chip ${st.tag==='Học'?'chip-mfg':st.tag==='Luyện'?'chip-office':st.tag==='Bài học'?'chip-trade':st.tag==='Roleplay'?'chip-interp':'chip-nego'}">${st.tag}</span>${d?'<span class="chip chip-good">✓ Đã hoàn thành</span>':''}</div>
+ ${body}`;
+ window.scrollTo({top:0});
+};
+window.STEPPHASE=p=>{const el=$('#view-step');el._phase=p;RENDER.step(el);};
 window.FREEMODE=()=>{S.freeMode=!S.freeMode;save();RENDER.roadmap($('#view-roadmap'));toast(S.freeMode?'Đã bật chế độ học tự do':'Đã bật chế độ tuần tự');};
 
 RENDER.roadmap=el=>{
@@ -4075,7 +4287,7 @@ RENDER.roadmap=el=>{
  const totalSteps=ROADMAP2.reduce((a,s)=>a+s.steps.length,0);
  const doneSteps=ROADMAP2.reduce((a,s)=>a+s.steps.filter(stepDone).length,0);
  el.innerHTML=pageHead('Learning Roadmap · học gì, luyện gì, theo thứ tự','路线','Lộ trình 8 giai đoạn · '+doneSteps+'/'+totalSteps+' bước',
- 'Mỗi giai đoạn gồm các bước HỌC (từ vựng, chuyên đề) và LUYỆN (hội thoại, tình huống, roleplay, dịch) theo đúng trình tự. Hoàn thành hết các bước thì giai đoạn sau mở khóa. Bước có gắn bài tập sẽ tự đánh dấu ✓ khi bạn làm xong; bước tự học thì bấm "Đã học xong".')+
+ 'Học theo đúng trình tự — và KHÔNG có nút tự đánh dấu. Bước tự học phải qua bài KIỂM TRA CHỐT đúng 100% mới được ✓; bước bài tập tự ✓ khi đạt chuẩn: tình huống & mission & một-ngày-đi-làm đạt 100%, roleplay đạt ≥90 điểm. Làm sai cứ làm lại — câu hỏi sẽ xáo trộn.')+
  `<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
   <div class="bar" style="flex:1;min-width:200px"><i style="width:${Math.round(doneSteps/totalSteps*100)}%"></i></div>
   <span class="num" style="font-size:12.5px;color:var(--ink3)">${Math.round(doneSteps/totalSteps*100)}%</span>
@@ -4105,8 +4317,8 @@ RENDER.roadmap=el=>{
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
      <button class="btn btn-sm ${isNext?'btn-primary':''}" onclick="ROADGO(${i},'${st.k}')">${d?'Xem lại':'Vào học'} →</button>
-     ${!d&&!st.auto&&unlocked?`<button class="btn btn-sm btn-ghost" onclick="ROADDONE('${st.k}')">✓ Đã học xong</button>`:''}
-     ${!d&&st.auto?`<span style="font-size:10.5px;color:var(--ink3)">tự ✓ khi làm xong</span>`:''}
+     ${!d&&QUIZMAP[st.k]&&unlocked?`<button class="btn btn-sm" style="border-color:var(--accent);color:var(--accent-ink)" onclick="ROADQUIZ(${i},'${st.k}')">✍ Kiểm tra 100%</button>`:''}
+     ${!d&&st.auto?`<span style="font-size:10.5px;color:var(--ink3);text-align:right;max-width:150px">tự ✓ khi ${AUTOREQ[st.auto.split(':')[0]]}</span>`:''}
     </div></div>`}).join('')}
   </div>`}).join('');
 };
@@ -4134,7 +4346,7 @@ RENDER.dashboard=el=>{
 /* ================= HELP PANEL 帮助 ================= */
 const HELP=[
  {v:'dashboard',q:'Dashboard hiển thị những gì?',a:'Tổng quan việc học của bạn: <b>XP & cấp bậc</b> (Intern → Professional Negotiator), số từ đã lưu, bài học đã xong, <b>Skill Radar</b> 6 kỹ năng, và bước tiếp theo trong lộ trình. Mỗi hoạt động đều cộng XP và tăng radar.'},
- {v:'roadmap',q:'Học theo lộ trình như thế nào?',a:'Vào <b>Lộ trình</b> và làm lần lượt từng bước từ trên xuống: bước <b>Học</b> mở kho từ/chuyên đề (học xong bấm "Đã học xong"), bước <b>Luyện/Bài học/Roleplay</b> tự đánh dấu ✓ khi bạn hoàn thành. Xong hết một giai đoạn thì giai đoạn sau mở khóa. Muốn xem trước nội dung khóa sau, bật "Chế độ tự do".',go:['roadmap']},
+ {v:'roadmap',q:'Học theo lộ trình như thế nào?',a:'Bấm <b>Vào học</b> ở từng bước — bạn sẽ đi một flow trọn vẹn: <b>Giới thiệu</b> (phần này học gì, học xong đạt được gì) → <b>Nội dung học</b> ngay trong trang → <b>Kiểm tra chốt</b>. KHÔNG có nút tự đánh dấu: bước tự học phải làm kiểm tra đúng <b>100%</b> mới được ✓ (sai thì ôn lại, câu hỏi xáo trộn); bước bài tập tự ✓ khi đạt chuẩn (tình huống/mission/một-ngày: 100%, roleplay: ≥90 điểm). Xong hết một giai đoạn thì giai đoạn sau mở khóa.',go:['roadmap']},
  {v:'vocab',q:'Học từ vựng & lưu từ để ôn tập?',a:'Bấm vào <b>thẻ từ</b> để xem chi tiết: cụm đi cùng, ví dụ, cách nói chuyên nghiệp, lỗi người Việt hay sai. Bấm <b>☆</b> để lưu vào My Vocabulary — từ sẽ tự quay lại trong <b>Ôn tập SRS</b> đúng lịch 1→3→7→16→35 ngày. Dùng bộ lọc ngành + cấp độ L1/L2/L3 để học đúng trình độ.',go:['vocab']},
  {v:'review',q:'Ôn tập SRS hoạt động ra sao?',a:'Chỉ ôn những từ ĐẾN HẠN. Nhìn chữ Hán → cố nhớ nghĩa + cách đọc → bấm lật → tự chấm: <b>Lại</b> (quên, học lại sau 1 giờ), <b>Nhớ</b> (giãn lên nấc sau), <b>Quá dễ</b> (nhảy 2 nấc). Trung thực với chính mình thì SRS mới hiệu quả.',go:['review']},
  {v:'roleplay',q:'AI Roleplay chơi thế nào?',a:'Chọn kịch bản → đọc thẻ <b>Nhiệm vụ</b> (vai, mục tiêu, từ vựng cần dùng, có cả thử thách ẩn) → nhân vật nói (có audio + pinyin + dịch) → bạn chọn câu trả lời và <b>đọc to câu đó</b>. Mỗi lựa chọn rẽ nhánh khác nhau. Kết thúc có bảng điểm + phân tích "bạn nói / nên nói thế này". Chơi lại để thử nhánh khác!',go:['roleplay']},
