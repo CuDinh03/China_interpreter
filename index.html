@@ -80,7 +80,7 @@ a{color:inherit;text-decoration:none}
   .sidebar.open{transform:translateX(0)}
   .menu-btn{display:grid}
   .scrim.show{display:block}
-  .main{margin-left:0;padding:70px 16px 80px}
+  .main{margin-left:0;padding:70px 16px 108px}
 }
 
 /* ============ COMMON ============ */
@@ -183,7 +183,7 @@ a{color:inherit;text-decoration:none}
 .modal-scrim.show{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg);max-width:560px;width:100%;padding:26px;position:relative;animation:pop .2s ease}
 @keyframes pop{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
-.modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3)}
+.modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);z-index:12;background:var(--surface)}
 .modal-close:hover{background:var(--surface2);color:var(--ink)}
 .modal .big-hanzi{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:40px;line-height:1.2}
 .mrow{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);font-size:13.5px}
@@ -6065,15 +6065,34 @@ const MASTERY=[['Chưa học','var(--ink3)'],['Learning','var(--warn)'],['Learni
 /* player shell */
 .sp-wrap{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
 .sp-stage{flex:0 0 340px;max-width:340px;width:100%}
-@media(max-width:820px){
- /* Ô chữ DÍNH lại phía trên khi cuộn xuống xem điều khiển / dải từng bước,
-    nhờ vậy luôn nhìn thấy chữ đang được viết */
- .sp-stage{flex:1 1 100%;max-width:min(300px,80vw);margin:0 auto;
-   position:sticky;top:6px;z-index:6;background:var(--bg);
-   padding-bottom:8px;border-radius:16px}
- .modal .sp-stage{background:var(--surface)}
-}
 .sp-side{flex:1;min-width:250px}
+.sp-stick{width:100%}
+.sp-cap{text-align:center;margin-top:10px}
+@media(max-width:820px){
+ /* Trên điện thoại: MỘT cột duy nhất, mọi khối rộng BẰNG NHAU.
+    sp-stage dùng display:contents để các khối con nằm thẳng hàng trong sp-wrap,
+    nhờ vậy không còn khối nào hẹp hơn khối khác rồi lòi ra hai bên (trông như đè nhau).
+    Ô chữ thu nhỏ vừa phải để chữ + nút điều khiển + thẻ mô tả nét cùng nằm
+    trong một màn hình — không cần ghim, không có gì che khuất gì. */
+ .sp-wrap:not(.vw-wrap){display:block}
+ .sp-wrap:not(.vw-wrap) .sp-stage{display:contents}
+ .sp-wrap:not(.vw-wrap) .sp-side{display:block;width:100%;min-width:0;max-width:none;margin-top:16px}
+ .sp-stick{width:100%}
+ .sp-stick .hzg{max-width:min(206px,52vw);margin:0 auto}
+ .sp-cap{margin-top:6px}
+ .sp-ctl{margin-top:10px}
+ .sp-row{margin-top:8px}
+ .sp-info{padding:12px 14px}
+}
+@media(max-width:400px){ .sp-stick .hzg{max-width:min(184px,50vw)} }
+/* khối "Cách viết" nhỏ trong thẻ từ vựng */
+.vw-stage{flex:0 0 190px;max-width:190px;width:100%}
+.vw-side{flex:1;min-width:190px}
+@media(max-width:560px){
+ .vw-stage{flex:1 1 100%;max-width:none}
+ .vw-stage .hzg{max-width:190px;margin:0 auto}
+ .vw-side{flex:1 1 100%;min-width:0;width:100%}
+}
 .sp-ctl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
 .sp-btn{min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:600;transition:all .15s}
 .sp-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
@@ -6684,8 +6703,8 @@ function drawCL(){
  let body='';
  if(i===0){
   body=`<div class="sp-wrap">
-   <div class="sp-stage"><div class="hzg"><svg viewBox="0 0 1024 1024">${HanziWritingGrid(true)}
-     <text x="512" y="512" text-anchor="middle" dominant-baseline="central" font-family="Noto Serif SC, serif" font-weight="900" font-size="620" fill="var(--hz-ink)">${esc(ch)}</text></svg></div></div>
+   <div class="sp-stage"><div class="sp-stick"><div class="hzg"><svg viewBox="0 0 1024 1024">${HanziWritingGrid(true)}
+     <text x="512" y="512" text-anchor="middle" dominant-baseline="central" font-family="Noto Serif SC, serif" font-weight="900" font-size="620" fill="var(--hz-ink)">${esc(ch)}</text></svg></div></div></div>
    <div class="sp-side">
     <div class="sp-info"><b>Bước 1 — Nhìn kỹ trước khi học</b>
      <div style="font-size:13.5px;color:var(--ink2);margin-top:8px;line-height:1.7">Đừng vội xem animation. Hãy nhìn chữ <b>${esc(ch)}</b> trong ô 米字格 khoảng 5 giây và tự trả lời:
@@ -6696,13 +6715,13 @@ function drawCL(){
  if(i===1)body=`<div class="sp-info">${partsHTML(ch)}</div>${clNav()}`;
  if(i===2)body=`<div class="sp-info">${bridgeHTML(ch)}</div>${clNav()}`;
  if(i===3){
-  body=`<div class="sp-wrap"><div class="sp-stage"><div id="clStage"></div></div>
+  body=`<div class="sp-wrap"><div class="sp-stage"><div class="sp-stick"><div id="clStage"></div></div></div>
    <div class="sp-side"><div id="clCtl"></div>${clNav()}</div></div>`;
  }
  if(i===4||i===5){
   const guided=i===4;
   body=`<div class="sp-wrap"><div class="sp-stage">
-    <div class="hzg" id="clQuiz" style="position:relative"></div>
+    <div class="sp-stick"><div class="hzg" id="clQuiz" style="position:relative"></div></div>
     <div class="sp-ctl"><button class="sp-btn" onclick="CLQ()" aria-label="Viết lại">↻ Viết lại</button>
      ${guided?'':'<button class="sp-btn" onclick="CLGO(3)" aria-label="Xem lại nét">👁 Xem lại nét</button>'}</div></div>
    <div class="sp-side"><div class="sp-info">
@@ -6799,7 +6818,7 @@ window.openChar=(ch,ctx)=>{
  const info=HV[ch]||{},m=wMastery(ch),c=charContext(ch),{rad}=charParts(ch);
  $('#modalBox').innerHTML=`<button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
   <div class="sp-wrap">
-   <div class="sp-stage"><div id="ocStage"></div><div id="ocCtl"></div></div>
+   <div class="sp-stage"><div class="sp-stick"><div id="ocStage"></div></div><div id="ocCtl"></div></div>
    <div class="sp-side">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
      <span class="zh" style="font-size:34px;font-weight:900">${esc(ch)}</span>
@@ -6875,12 +6894,14 @@ function wPlayerHTML(el){
   </div>
   <div class="sp-wrap">
    <div class="sp-stage">
-    <div id="wpStage"></div>
-    <div style="text-align:center;margin-top:10px">
-     <span class="zh" style="font-size:24px;font-weight:900">${esc(ch)}</span>
-     <span class="pinyin" style="font-size:15px;margin-left:6px">${esc(info.p||'')}</span>
-     <span class="cl-hv" style="margin-left:6px">${esc(info.hv||'')}</span>
-     <div style="font-size:12.5px;color:var(--ink2)">${esc(info.m||'')}</div></div>
+    <div class="sp-stick">
+     <div id="wpStage"></div>
+     <div class="sp-cap">
+      <span class="zh" style="font-size:22px;font-weight:900">${esc(ch)}</span>
+      <span class="pinyin" style="font-size:14.5px;margin-left:6px">${esc(info.p||'')}</span>
+      <span class="cl-hv" style="margin-left:6px">${esc(info.hv||'')}</span>
+      <span style="font-size:12.5px;color:var(--ink2);margin-left:6px">${esc(info.m||'')}</span></div>
+    </div>
    </div>
    <div class="sp-side"><div id="wpCtl"></div></div>
   </div>`;
@@ -6907,7 +6928,7 @@ function wBasicsHTML(el){
    <div style="font-size:12px;color:var(--ink3);margin-top:4px" class="num">${doneN}/${STROKE_COURSE.length} bước hoàn thành</div></div>
   <div class="cl-steps">${STROKE_COURSE.map((x,k)=>`<button class="cl-step ${S.write.course&&S.write.course[x.k]?'done':k===i?'now':''}" onclick="WCGO(${k})">${k+1}</button>`).join('')}</div>
   <div class="sp-wrap">
-   <div class="sp-stage"><div id="wcStage"></div>
+   <div class="sp-stage"><div class="sp-stick"><div id="wcStage"></div></div>
     <div class="sp-ctl">
      <button class="sp-btn ${mode==='watch'?'primary':''}" onclick="WCMODE('watch')" aria-label="Xem nét chạy">▶ Xem</button>
      <button class="sp-btn ${mode==='write'?'primary':''}" onclick="WCMODE('write')" aria-label="Tự viết">✍ Viết thử</button>
@@ -7112,9 +7133,9 @@ window.openVocab=id=>{
  window.VWOPEN=c=>vwRender(c);
  function vwRender(c){
   const info=HV[c]||{};
-  $('#vwBody').innerHTML=`<div class="sp-wrap" style="gap:14px">
-    <div style="flex:0 0 190px;max-width:190px;width:100%"><div id="vwStage"></div></div>
-    <div style="flex:1;min-width:190px">
+  $('#vwBody').innerHTML=`<div class="sp-wrap vw-wrap" style="gap:14px">
+    <div class="vw-stage"><div id="vwStage"></div></div>
+    <div class="vw-side">
      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
       <span class="zh" style="font-size:24px;font-weight:900">${esc(c)}</span>
       <span class="pinyin">${esc(info.p||'')}</span><span class="cl-hv">${esc(info.hv||'')}</span>
