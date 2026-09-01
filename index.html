@@ -6065,7 +6065,14 @@ const MASTERY=[['Chưa học','var(--ink3)'],['Learning','var(--warn)'],['Learni
 /* player shell */
 .sp-wrap{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
 .sp-stage{flex:0 0 340px;max-width:340px;width:100%}
-@media(max-width:820px){.sp-stage{flex:1 1 100%;max-width:min(300px,80vw);margin:0 auto}}
+@media(max-width:820px){
+ /* Ô chữ DÍNH lại phía trên khi cuộn xuống xem điều khiển / dải từng bước,
+    nhờ vậy luôn nhìn thấy chữ đang được viết */
+ .sp-stage{flex:1 1 100%;max-width:min(300px,80vw);margin:0 auto;
+   position:sticky;top:6px;z-index:6;background:var(--bg);
+   padding-bottom:8px;border-radius:16px}
+ .modal .sp-stage{background:var(--surface)}
+}
 .sp-side{flex:1;min-width:250px}
 .sp-ctl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
 .sp-btn{min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:600;transition:all .15s}
@@ -6083,7 +6090,9 @@ const MASTERY=[['Chưa học','var(--ink3)'],['Learning','var(--warn)'],['Learni
 .sp-badge i{width:8px;height:8px;border-radius:99px;background:var(--hz-red);animation:hzblink 1s infinite}
 @keyframes hzblink{0%,100%{opacity:1}50%{opacity:.25}}
 /* mini strip */
-.sp-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 2px 12px;scroll-behavior:smooth}
+.sp-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 2px 12px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+/* chừa chỗ cho nút trợ giúp nổi ở góc phải dưới trên điện thoại */
+@media(max-width:820px){.sp-strip{padding-right:66px}}
 .sp-frame{flex:0 0 auto;width:62px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);padding:3px;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
 .sp-frame:hover{border-color:var(--ink3)}
 .sp-frame.cur{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.03)}
@@ -6428,7 +6437,13 @@ function StrokeControls(host,player,opts={}){
    if(!built&&player.strokes.length){strip.innerHTML=stripHTML(player.strokes,st.current);built=true;}
    else strip.querySelectorAll('.sp-frame').forEach((f,i)=>{
     const cur=i===st.current; f.classList.toggle('cur',cur);
-    if(cur&&f.scrollIntoView)f.scrollIntoView({block:'nearest',inline:'nearest'});
+    /* CHỈ cuộn NGANG bên trong dải — không dùng scrollIntoView vì nó
+       kéo cả trang theo, làm màn hình điện thoại nhảy khỏi ô chữ chính */
+    if(cur&&strip.scrollWidth>strip.clientWidth+2){
+     const target=f.offsetLeft-(strip.clientWidth-f.offsetWidth)/2;
+     const max=strip.scrollWidth-strip.clientWidth;
+     strip.scrollLeft=Math.max(0,Math.min(max,target));
+    }
    });
   }
  };
