@@ -317,6 +317,7 @@ table.simple td{padding:9px 10px;border-bottom:1px solid var(--border)}
     <button class="nav-item" data-view="careers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>4 Ngành nghề<span class="nav-zh">行业</span></button>
     <button class="nav-item" data-view="lessons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>Bài học<span class="nav-zh">课程</span></button>
     <button class="nav-item" data-view="vocab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M5 8h5M5 12h5M14 8h5M14 12h5M5 16h5m4 0h5"/></svg>Từ vựng<span class="nav-zh">词汇</span></button>
+    <button class="nav-item" data-view="write"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>Viết chữ Hán<span class="nav-zh">书写</span></button>
     <button class="nav-item" data-view="sentences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h12M4 14h16M4 18h9"/></svg>Sentence Bank<span class="nav-zh">句库</span></button>
     <button class="nav-item" data-view="phrases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M15 3h6v6"/><path d="M21 3 12 12"/></svg>Phrase Bank<span class="nav-zh">短语</span></button>
     <button class="nav-item" data-view="conversations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 10h8M8 14h5M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/></svg>Hội thoại<span class="nav-zh">对话</span></button>
@@ -350,6 +351,7 @@ table.simple td{padding:9px 10px;border-bottom:1px solid var(--border)}
   <section class="view" id="view-lessons"></section>
   <section class="view" id="view-lesson"></section>
   <section class="view" id="view-vocab"></section>
+  <section class="view" id="view-write"></section>
   <section class="view" id="view-sentences"></section>
   <section class="view" id="view-phrases"></section>
   <section class="view" id="view-conversations"></section>
@@ -3104,6 +3106,869 @@ V.push(
 );
 </script>
 <script>
+/* ============================================================
+   TỪ ĐIỂN CHỮ HÁN · char | pinyin | ÂM HÁN VIỆT | nghĩa gốc
+   Âm Hán Việt là "siêu năng lực" của người Việt học tiếng Trung:
+   交货期 = GIAO HÓA KỲ → nhớ chữ nhanh gấp nhiều lần học vẹt.
+   ============================================================ */
+const HVP=[];
+HVP.push(`我|wǒ|NGÃ|ta, tôi
+货|huò|HÓA|hàng hóa
+不|bù|BẤT|không
+了|le, liǎo|LIỄU|xong, hiểu rõ
+一|yī|NHẤT|một
+价|jià|GIÁ|giá cả
+点|diǎn|ĐIỂM|điểm, chấm, giờ
+到|dào|ĐÁO|đến
+单|dān|ĐƠN|đơn, phiếu, lẻ
+工|gōng|CÔNG|công việc, thợ
+期|qī|KỲ|kỳ hạn
+个|gè|CÁ|cái (lượng từ)
+们|men|MÔN|(hậu tố số nhiều)
+件|jiàn|KIỆN|cái, kiện, vụ việc
+量|liàng|LƯỢNG|lượng, đo
+的|de, dì|ĐÍCH|(trợ từ sở hữu); đích
+您|nín|NÂM|ngài (kính ngữ của 你)
+理|lǐ|LÝ|lẽ, quản lý, sửa
+合|hé|HỢP|hợp, khớp
+天|tiān|THIÊN|trời, ngày
+出|chū|XUẤT|ra, xuất
+好|hǎo|HẢO|tốt, hay
+报|bào|BÁO|báo cáo, tin
+会|huì|HỘI|họp, biết, sẽ
+产|chǎn|SẢN|sản xuất, đẻ
+能|néng|NĂNG|có thể, năng lực
+电|diàn|ĐIỆN|điện
+这|zhè|GIÁ|này
+交|jiāo|GIAO|giao, nộp
+请|qǐng|THỈNH|mời, xin
+关|guān|QUAN|đóng, cửa ải, liên quan
+下|xià|HẠ|dưới, xuống
+色|sè|SẮC|màu sắc
+料|liào|LIỆU|liệu, vật liệu
+来|lái|LAI|đến, tới
+译|yì|DỊCH|dịch (ngôn ngữ)
+客|kè|KHÁCH|khách
+议|yì|NGHỊ|bàn, nghị
+检|jiǎn|KIỂM|kiểm tra
+格|gé|CÁCH|khung, cách thức
+前|qián|TIỀN|trước
+时|shí|THỜI|thời gian, giờ
+中|zhōng|TRUNG|giữa, Trung Quốc
+经|jīng|KINH|trải qua, kinh doanh
+没|méi|MỘT|không có
+商|shāng|THƯƠNG|thương mại, bàn bạc
+成|chéng|THÀNH|thành, xong
+样|yàng|DẠNG|dạng, mẫu
+机|jī|CƠ|máy, cơ hội
+保|bǎo|BẢO|giữ, bảo đảm
+翻|fān|PHIÊN|lật, phiên dịch
+谈|tán|ĐÀM|nói chuyện, đàm phán
+判|pàn|PHÁN|phân định, phán
+多|duō|ĐA|nhiều
+问|wèn|VẤN|hỏi
+生|shēng|SINH|sinh ra, sống
+品|pǐn|PHẨM|phẩm chất, hàng
+质|zhì|CHẤT|chất lượng
+差|chà, chā|SAI|kém, sai lệch
+运|yùn|VẬN|vận chuyển, vận
+接|jiē|TIẾP|tiếp, nối, đón
+费|fèi|PHÍ|phí tổn
+发|fā|PHÁT|phát, gửi
+要|yào|YẾU|cần, muốn, quan trọng
+同|tóng|ĐỒNG|cùng, giống
+厂|chǎng|XƯỞNG|nhà xưởng
+班|bān|BAN|ca làm, lớp
+户|hù|HỘ|hộ, nhà, tài khoản
+意|yì|Ý|ý, ý nghĩa
+订|dìng|ĐÍNH|đặt hàng, đính
+批|pī|PHÊ|lô, phê duyệt
+开|kāi|KHAI|mở, bật
+两|liǎng|LƯỠNG|hai
+明|míng|MINH|sáng, rõ, ngày mai
+场|chǎng|TRƯỜNG|bãi, sân
+进|jìn|TIẾN|vào, tiến
+口|kǒu|KHẨU|miệng, cửa
+间|jiān|GIAN|khoảng, gian phòng
+假|jià, jiǎ|GIẢ|nghỉ phép; giả
+作|zuò|TÁC|làm, tác phẩm
+贵|guì|QUÝ|quý, đắt
+重|zhòng, chóng|TRỌNG|nặng, quan trọng; lặp
+表|biǎo|BIỂU|bảng biểu, đồng hồ
+度|dù|ĐỘ|độ, mức
+装|zhuāng|TRANG|lắp, đóng gói
+提|tí|ĐỀ|nâng, nêu ra
+有|yǒu|HỮU|có
+款|kuǎn|KHOẢN|khoản tiền, điều khoản
+比|bǐ|TỶ|so sánh
+吧|ba|BA|(trợ từ nhé, đi)
+以|yǐ|DĨ|lấy, dùng để
+可|kě|KHẢ|có thể
+事|shì|SỰ|việc
+加|jiā|GIA|thêm, cộng
+题|tí|ĐỀ|đề bài, vấn đề
+汇|huì|HỐI|hối đoái, tổng hợp
+应|yīng, yìng|ỨNG|nên; ứng đáp
+司|sī|TY|coi quản (公司 công ty)
+打|dǎ|ĐẢ|đánh, làm, gọi
+原|yuán|NGUYÊN|gốc, nguyên
+文|wén|VĂN|văn, chữ
+线|xiàn|TUYẾN|dây, tuyến, chuyền
+验|yàn|NGHIỆM|kiểm nghiệm
+急|jí|CẤP|gấp, vội
+金|jīn|KIM|vàng, kim loại
+风|fēng|PHONG|gió
+那|nà|NA|kia, đó
+公|gōng|CÔNG|chung, công
+主|zhǔ|CHỦ|chủ
+车|chē|XA|xe
+上|shàng|THƯỢNG|trên, lên
+人|rén|NHÂN|người
+供|gōng|CUNG|cung cấp
+记|jì|KÝ|ghi nhớ
+方|fāng|PHƯƠNG|phương hướng, vuông
+总|zǒng|TỔNG|tổng, luôn
+备|bèi|BỊ|chuẩn bị, dự phòng
+行|xíng, háng|HÀNH, HÀNG|đi, được; ngành
+调|tiáo, diào|ĐIỀU|điều chỉnh, điều động
+数|shù, shǔ|SỐ|số, đếm
+次|cì|THỨ|lần, thứ
+全|quán|TOÀN|toàn bộ
+定|dìng|ĐỊNH|định, chắc
+签|qiān|THIÊM|ký tên
+给|gěi|CẤP|cho, cấp
+年|nián|NIÊN|năm
+证|zhèng|CHỨNG|chứng nhận
+号|hào|HIỆU|số hiệu, ngày
+已|yǐ|DĨ|đã
+家|jiā|GIA|nhà, gia đình
+得|de, děi|ĐẮC|được, phải
+再|zài|TÁI|lại, nữa
+是|shì|THỊ|là, đúng
+空|kōng, kòng|KHÔNG|trống, không khí
+台|tái|ĐÀI|đài, chiếc (máy)
+对|duì|ĐỐI|đúng, đối với
+职|zhí|CHỨC|chức vụ
+办|bàn|BIỆN|làm, xử lý
+管|guǎn|QUẢN|quản lý, ống
+板|bǎn|BẢN|tấm, ván
+安|ān|AN|yên, an toàn
+认|rèn|NHẬN|nhận, thừa nhận
+通|tōng|THÔNG|thông suốt
+补|bǔ|BỔ|bù, vá
+如|rú|NHƯ|như, nếu
+实|shí|THỰC|thực, thật
+完|wán|HOÀN|xong, hoàn
+延|yán|DIÊN|kéo dài
+查|chá|TRA|tra cứu, kiểm
+标|biāo|TIÊU|tiêu chuẩn, mốc
+告|gào|CÁO|báo, cáo
+故|gù|CỐ|cớ, sự cố, cũ
+停|tíng|ĐÌNH|dừng, đỗ
+物|wù|VẬT|vật, đồ
+清|qīng|THANH|trong, rõ, sạch
+目|mù|MỤC|mắt, mục
+降|jiàng|GIÁNG|hạ, giảm
+条|tiáo|ĐIỀU|điều, sợi (lượng từ)
+箱|xiāng|TƯƠNG|thùng, hòm
+账|zhàng|TRƯƠNG|sổ sách, tài khoản
+协|xié|HIỆP|hiệp, cùng
+预|yù|DỰ|dự, trước
+误|wù|NGỘ|lỡ, sai lầm
+后|hòu|HẬU|sau
+还|hái, huán|HOÀN|còn, vẫn; trả
+太|tài|THÁI|quá, rất
+白|bái|BẠCH|trắng
+也|yě|DÃ|cũng
+三|sān|TAM|ba
+用|yòng|DỤNG|dùng
+大|dà|ĐẠI|to, lớn
+及|jí|CẬP|kịp, và
+分|fēn, fèn|PHÂN|chia, phút, phần
+面|miàn|DIỆN|mặt, mì
+制|zhì|CHẾ|chế tạo, chế độ
+业|yè|NGHIỆP|nghề, nghiệp
+部|bù|BỘ|bộ phận
+门|mén|MÔN|cửa, môn
+思|sī|TƯ|nghĩ
+达|dá|ĐẠT|đạt tới
+计|jì|KẾ|tính, kế hoạch
+迟|chí|TRÌ|chậm, muộn
+流|liú|LƯU|chảy, dòng
+水|shuǐ|THỦY|nước
+良|liáng|LƯƠNG|tốt, lành
+因|yīn|NHÂN|nguyên nhân
+障|zhàng|CHƯỚNG|trở ngại
+具|jù|CỤ|dụng cụ, đủ
+试|shì|THÍ|thử
+程|chéng|TRÌNH|trình, chặng
+参|cān|THAM|tham gia
+率|lǜ|SUẤT|tỷ lệ
+险|xiǎn|HIỂM|hiểm, nguy
+邮|yóu|BƯU|bưu điện
+回|huí|HỒI|về, trả lời
+跟|gēn|CĂN|theo, gót chân
+先|xiān|TIÊN|trước, tổ tiên
+话|huà|THOẠI|lời nói
+信|xìn|TÍN|tin, thư
+起|qǐ|KHỞI|dậy, bắt đầu
+海|hǎi|HẢI|biển
+诉|sù|TỐ|kể, kiện
+底|dǐ|ĐỂ|đáy, cuối
+步|bù|BỘ|bước
+算|suàn|TOÁN|tính toán
+晚|wǎn|VÃN|muộn, tối
+说|shuō|THUYẾT|nói
+看|kàn|KHÁN|xem, nhìn
+现|xiàn|HIỆN|hiện tại
+小|xiǎo|TIỂU|nhỏ
+少|shǎo|THIỂU|ít
+么|me|MA|(trợ từ nghi vấn)
+最|zuì|TỐI|nhất
+果|guǒ|QUẢ|quả, kết quả
+就|jiù|TỰU|liền, thì
+真|zhēn|CHÂN|thật
+但|dàn|ĐÃN|nhưng
+送|sòng|TỐNG|đưa, tặng, tiễn
+收|shōu|THU|nhận, thu
+越|yuè|VIỆT|vượt; Việt Nam
+码|mǎ|MÃ|mã số
+放|fàng|PHÓNG|đặt, thả
+室|shì|THẤT|phòng
+责|zé|TRÁCH|trách nhiệm
+排|pái|BÀI|sắp xếp, hàng
+麻|má|MA|gai, tê, phiền
+烦|fán|PHIỀN|phiền
+确|què|XÁC|xác thực
+快|kuài|KHOÁI|nhanh, vui
+力|lì|LỰC|sức lực
+系|xì|HỆ|hệ thống, buộc
+复|fù|PHỤC|lại, phục hồi
+术|shù|THUẬT|kỹ thuật, thuật
+语|yǔ|NGỮ|ngôn ngữ
+半|bàn|BÁN|nửa
+缺|quē|KHUYẾT|thiếu
+员|yuán|VIÊN|nhân viên
+材|cái|TÀI|vật liệu, gỗ
+位|wèi|VỊ|vị trí, ngôi
+消|xiāo|TIÊU|tiêu, tan
+休|xiū|HƯU|nghỉ
+便|biàn, pián|TIỆN|tiện, rẻ
+案|àn|ÁN|án, phương án
+知|zhī|TRI|biết
+催|cuī|THÔI|giục
+压|yā|ÁP|ép, áp lực
+采|cǎi|THÁI|hái, thu mua
+购|gòu|CẤU|mua
+涨|zhǎng|TRƯỚNG|tăng, dâng
+本|běn|BẢN|gốc, vốn, quyển
+改|gǎi|CẢI|sửa đổi
+投|tóu|ĐẦU|ném, đầu tư, khiếu nại
+赔|péi|BỒI|bồi thường
+偿|cháng|THƯỜNG|đền bù
+损|sǔn|TỔN|tổn hại
+让|ràng|NHƯỢNG|nhường, để cho
+处|chǔ, chù|XỬ, XỨ|xử lý; nơi
+国|guó|QUỐC|nước, quốc gia
+做|zuò|TỐ|làm
+超|chāo|SIÊU|vượt, siêu
+和|hé|HÒA|và, hòa thuận
+影|yǐng|ẢNH|bóng, ảnh
+里|lǐ|LÝ|trong, dặm
+边|biān|BIÊN|bên, biên
+低|dī|ĐÊ|thấp
+代|dài|ĐẠI|thay, đời
+续|xù|TỤC|tiếp tục
+向|xiàng|HƯỚNG|hướng về
+为|wèi, wéi|VI, VỊ|vì, làm
+免|miǎn|MIỄN|miễn, tránh
+正|zhèng|CHÍNH|chính, đúng
+季|jì|QUÝ|mùa, quý
+子|zǐ|TỬ|con, hạt
+气|qì|KHÍ|khí, hơi
+头|tóu|ĐẦU|đầu
+自|zì|TỰ|tự, từ
+负|fù|PHỤ|gánh, âm, thua
+解|jiě|GIẢI|cởi, giải quyết
+尽|jǐn, jìn|TẬN|hết mức, tận
+情|qíng|TÌNH|tình cảm, tình hình
+况|kuàng|HUỐNG|huống, tình cảnh
+卡|kǎ, qiǎ|CA|thẻ; kẹt
+资|zī|TƯ|tư liệu, vốn
+日|rì|NHẬT|mặt trời, ngày
+转|zhuǎn|CHUYỂN|chuyển, quay
+慢|màn|MẠN|chậm
+双|shuāng|SONG|đôi, hai
+结|jié|KẾT|kết, buộc
+划|huà|HOẠCH|hoạch định, vạch
+配|pèi|PHỐI|phối hợp, phụ tùng
+包|bāo|BAO|bao, gói
+准|zhǔn|CHUẨN|chuẩn, cho phép
+返|fǎn|PHẢN|quay lại
+抽|chōu|TRỪU|rút, hút
+尺|chǐ|XÍCH|thước
+设|shè|THIẾT|thiết lập
+器|qì|KHÍ|đồ vật, máy
+修|xiū|TU|sửa chữa, tu
+模|mó|MÔ|khuôn, mô hình
+师|shī|SƯ|thầy, sư`);
+</script>
+<script>
+HVP.push(`库|kù|KHỐ|kho
+领|lǐng|LĨNH|lĩnh, cổ áo, dẫn
+紧|jǐn|KHẨN|gấp, chặt
+整|zhěng|CHỈNH|chỉnh tề, nguyên
+岗|gǎng|CƯƠNG|gò, vị trí làm việc
+防|fáng|PHÒNG|phòng ngừa
+规|guī|QUY|quy tắc, compa
+帮|bāng|BANG|giúp, bang
+印|yìn|ẤN|in, dấu ấn
+见|jiàn|KIẾN|thấy, gặp
+推|tuī|THÔI|đẩy
+写|xiě|TẢ|viết
+截|jié|TIỆT|cắt, chặn
+优|yōu|ƯU|ưu tú, ưu đãi
+考|kǎo|KHẢO|khảo, thi
+市|shì|THỊ|chợ, thành phố
+利|lì|LỢI|lợi ích, sắc
+折|zhé|CHIẾT|gãy, chiết khấu
+扣|kòu|KHẤU|khấu trừ, cài
+取|qǔ|THỦ|lấy
+更|gèng, gēng|CÁNH, CANH|càng; đổi
+违|wéi|VI|vi phạm
+约|yuē|ƯỚC|hẹn, ước
+税|shuì|THUẾ|thuế
+付|fù|PHÓ|trả, giao phó
+失|shī|THẤT|mất
+长|cháng, zhǎng|TRƯỜNG, TRƯỞNG|dài; lớn lên
+售|shòu|THỤ|bán
+访|fǎng|PHỎNG|thăm, phỏng vấn
+高|gāo|CAO|cao
+相|xiāng, xiàng|TƯƠNG, TƯỚNG|lẫn nhau; tướng mạo
+过|guò|QUÁ|qua, quá
+响|xiǎng|HƯỞNG|vang, tiếng
+想|xiǎng|TƯỞNG|nghĩ, muốn
+申|shēn|THÂN|trình, xin
+什|shén|THẬP|gì (什么)
+法|fǎ|PHÁP|phép, pháp luật
+观|guān|QUAN|xem, quan sát
+陈|chén|TRẦN|họ Trần, bày ra
+在|zài|TẠI|ở, đang
+楚|chǔ|SỞ|rõ ràng, nước Sở
+今|jīn|KIM|nay, hiện tại
+广|guǎng|QUẢNG|rộng, Quảng
+把|bǎ|BẢ|cầm; (giới từ 把)
+答|dá|ĐÁP|trả lời
+退|tuì|THOÁI|lui, trả lại
+从|cóng|TÒNG|từ, theo
+道|dào|ĐẠO|đường, đạo lý
+歉|qiàn|KHIỂM|lỗi, áy náy
+马|mǎ|MÃ|ngựa
+船|chuán|THUYỀN|thuyền, tàu
+销|xiāo|TIÊU|bán, tiêu thụ
+担|dān|ĐẢM|gánh vác
+外|wài|NGOẠI|ngoài
+早|zǎo|TẢO|sớm, buổi sáng
+内|nèi|NỘI|trong
+建|jiàn|KIẾN|xây, đề nghị
+走|zǒu|TẨU|đi, chạy
+常|cháng|THƯỜNG|thường, bình thường
+米|mǐ|MỄ|gạo, mét
+心|xīn|TÂM|tim, lòng
+练|liàn|LUYỆN|luyện tập
+路|lù|LỘ|đường
+贴|tiē|THIẾP|dán, phụ cấp
+胶|jiāo|GIAO|keo, cao su
+基|jī|CƠ|nền, cơ sở
+础|chǔ|SỞ|nền móng
+造|zào|TẠO|tạo, chế
+介|jiè|GIỚI|giới thiệu, ở giữa
+绍|shào|THIỆU|nối, giới thiệu
+辛|xīn|TÂN|cay, vất vả
+苦|kǔ|KHỔ|đắng, khổ
+决|jué|QUYẾT|quyết định
+名|míng|DANH|tên, danh
+片|piàn|PHIẾN|mảnh, tấm
+专|zhuān|CHUYÊN|chuyên
+充|chōng|SUNG|đầy, nạp
+技|jì|KỸ|kỹ năng
+图|tú|ĐỒ|hình vẽ, bản đồ
+纸|zhǐ|CHỈ|giấy
+仓|cāng|THƯƠNG|kho
+效|xiào|HIỆU|hiệu quả
+训|xùn|HUẤN|dạy bảo
+受|shòu|THỤ|nhận, chịu
+注|zhù|CHÚ|rót, chú ý
+招|zhāo|CHIÊU|vẫy, tuyển
+忙|máng|MANG|bận
+息|xī|TỨC|nghỉ, tin tức
+着|zhe, zháo|TRỨ|(trợ từ tiếp diễn)
+顺|shùn|THUẬN|thuận, xuôi
+录|lù|LỤC|ghi chép
+字|zì|TỰ|chữ
+止|zhǐ|CHỈ|dừng
+任|rèn|NHIỆM|nhiệm vụ, mặc
+务|wù|VỤ|việc, vụ
+入|rù|NHẬP|vào
+微|wēi|VI|nhỏ, vi
+稍|shāo|SẢO|hơi, chút
+等|děng|ĐẲNG|chờ, hạng
+留|liú|LƯU|giữ lại
+言|yán|NGÔN|lời nói
+询|xún|TUÂN|hỏi, tra
+惠|huì|HUỆ|ơn huệ, ưu đãi
+离|lí|LY|rời, cách
+岸|àn|NGẠN|bờ
+集|jí|TẬP|tụ tập, tập hợp
+票|piào|PHIẾU|vé, phiếu
+踪|zōng|TUNG|dấu vết
+地|dì, de|ĐỊA|đất, nơi
+尾|wěi|VĨ|đuôi, cuối
+虑|lǜ|LỰ|lo nghĩ
+诚|chéng|THÀNH|thành thật
+与|yǔ|DỮ|và, cùng
+于|yú|VU|ở, vào
+宜|yí|NGHI|nên, thích hợp
+其|qí|KỲ|ấy, của nó
+坏|huài|HOẠI|hỏng, xấu
+减|jiǎn|GIẢM|bớt, trừ
+扰|rǎo|NHIỄU|quấy nhiễu
+候|hòu|HẬU|chờ, thời điểm
+无|wú|VÔ|không có
+很|hěn|NGẬN|rất
+控|kòng|KHỐNG|kiểm soát
+去|qù|KHỨ|đi
+买|mǎi|MÃI|mua
+万|wàn|VẠN|vạn (10.000)
+导|dǎo|ĐẠO|dẫn dắt
+才|cái|TÀI|tài năng; mới
+或|huò|HOẶC|hoặc
+者|zhě|GIẢ|kẻ, người
+都|dōu, dū|ĐÔ|đều; đô thị
+第|dì|ĐỆ|thứ (số thứ tự)
+始|shǐ|THỦY|bắt đầu
+谢|xiè|TẠ|cảm ơn, tạ
+吴|wú|NGÔ|họ Ngô
+必|bì|TẤT|tất yếu
+须|xū|TU|phải, cần
+所|suǒ|SỞ|nơi, chỗ
+促|cù|XÚC|thúc đẩy
+承|chéng|THỪA|nhận, thừa
+属|shǔ|THUỘC|thuộc về
+视|shì|THỊ|nhìn, coi
+另|lìng|LÁNH|khác, riêng
+怎|zěn|CHẨM|sao, thế nào
+持|chí|TRÌ|giữ, cầm
+变|biàn|BIẾN|thay đổi
+航|háng|HÀNG|đi tàu, hàng không
+抄|chāo|SAO|chép, sao
+周|zhōu|CHU|tuần, vòng quanh
+避|bì|TỴ|tránh
+倍|bèi|BỘI|gấp bội
+暂|zàn|TẠM|tạm thời
+觉|jué, jiào|GIÁC|cảm thấy; ngủ
+午|wǔ|NGỌ|buổi trưa
+按|àn|ÁN|ấn, theo
+百|bǎi|BÁCH|trăm
+递|dì|ĐỆ|chuyển giao
+住|zhù|TRÚ|ở, trú
+新|xīn|TÂN|mới
+旺|wàng|VƯỢNG|thịnh vượng
+之|zhī|CHI|của (văn viết)
+概|gài|KHÁI|đại khái
+南|nán|NAM|phía nam
+据|jù|CỨ|căn cứ
+套|tào|SÁO|bộ, bao
+平|píng|BÌNH|bằng phẳng, bình
+月|yuè|NGUYỆT|trăng, tháng
+然|rán|NHIÊN|vậy, nhiên
+带|dài|ĐÁI|mang, dây đai
+搬|bān|BAN|khuân, dọn
+选|xuǎn|TUYỂN|chọn
+反|fǎn|PHẢN|ngược, phản
+干|gàn, gān|CÁN, CAN|làm; khô
+易|yì|DỊCH|dễ; đổi
+附|fù|PHỤ|kèm theo
+港|gǎng|CẢNG|cảng
+测|cè|TRẮC|đo, trắc nghiệm
+塑|sù|TỐ|nặn, nhựa
+服|fú|PHỤC|quần áo, phục vụ
+剪|jiǎn|TIỄN|cắt, kéo
+链|liàn|LIỄN|xích, chuỗi
+手|shǒu|THỦ|tay
+追|zhuī|TRUY|đuổi, truy
+夹|jiā|GIÁP|kẹp
+酒|jiǔ|TỬU|rượu
+店|diàn|ĐIẾM|cửa hàng, quán
+玩|wán|NGOẠN|chơi
+巴|bā|BA|(phiên âm), mong
+柜|guì|QUỸ|tủ, container
+漏|lòu|LẬU|rò rỉ
+断|duàn|ĐOẠN|đứt, ngắt
+书|shū|THƯ|sách, viết
+音|yīn|ÂM|âm thanh
+泡|pào|BÀO|bọt, ngâm
+扫|sǎo|TẢO|quét
+卸|xiè|TÁ|dỡ hàng
+你|nǐ|NHĨ|bạn, anh
+照|zhào|CHIẾU|chiếu, ảnh
+老|lǎo|LÃO|già, cũ
+沟|gōu|CÂU|rãnh, giao tiếp
+努|nǔ|NỖ|gắng sức
+节|jié|TIẾT|đốt, tiết, lễ
+笔|bǐ|BÚT|bút, nét
+立|lì|LẬP|đứng, lập
+赶|gǎn|CẢN|đuổi, chạy đua
+序|xù|TỰ|thứ tự
+陷|xiàn|HÃM|sa vào, khuyết
+废|fèi|PHẾ|bỏ, phế
+寸|cùn|THỐN|tấc
+维|wéi|DUY|duy trì, sợi
+养|yǎng|DƯỠNG|nuôi dưỡng
+操|cāo|THAO|thao tác, nắm
+零|líng|LINH|số không, lẻ
+存|cún|TỒN|tồn, gửi
+荷|hè|HÀ|gánh, tải, sen
+培|péi|BỒI|bồi dưỡng, vun
+帽|mào|MẠO|mũ
+危|wēi|NGUY|nguy hiểm
+伤|shāng|THƯƠNG|thương tích
+呼|hū|HÔ|gọi, thở ra
+讨|tǎo|THẢO|bàn, đòi
+论|lùn|LUẬN|bàn luận
+填|tián|ĐIỀN|điền, lấp
+落|luò|LẠC|rơi, xuống
+病|bìng|BỆNH|bệnh
+勤|qín|CẦN|chăm chỉ
+联|lián|LIÊN|liên kết
+源|yuán|NGUYÊN|nguồn
+润|rùn|NHUẬN|nhuận, lợi
+输|shū|THÂU|chở, thua
+储|chǔ|TRỮ|dự trữ
+索|suǒ|SÁCH|đòi, dây thừng
+拒|jù|CỰ|từ chối
+绝|jué|TUYỆT|tuyệt, dứt
+赢|yíng|DOANH|thắng
+妥|tuǒ|THỎA|thỏa đáng
+限|xiàn|HẠN|giới hạn
+由|yóu|DO|do, bởi
+该|gāi|CAI|nên, đó
+坦|tǎn|THẢN|thẳng thắn
+他|tā|THA|anh ấy
+距|jù|CỰ|khoảng cách
+叫|jiào|KHIẾU|gọi, kêu
+热|rè|NHIỆT|nóng, nhiệt
+将|jiāng|TƯƠNG|sẽ, đem
+移|yí|DI|dời, chuyển
+五|wǔ|NGŨ|năm
+梅|méi|MAI|hoa mai
+较|jiào|GIẢO|so sánh, khá
+求|qiú|CẦU|cầu xin, yêu cầu
+错|cuò|THÁC|sai
+连|lián|LIÊN|liền, nối
+省|shěng|TỈNH|tỉnh, tiết kiệm
+东|dōng|ĐÔNG|phía đông
+示|shì|THỊ|tỏ, chỉ ra
+光|guāng|QUANG|ánh sáng
+互|hù|HỖ|lẫn nhau
+愉|yú|DU|vui vẻ
+嗯|ǹg|—|(thán từ ừm)
+抱|bào|BÃO|ôm, giữ
+灾|zāi|TAI|tai họa
+嘛|ma|MA|(trợ từ mà)
+怪|guài|QUÁI|lạ, trách
+谁|shuí|THÙY|ai
+际|jì|TẾ|dịp, bờ, quốc tế
+抗|kàng|KHÁNG|chống lại
+范|fàn|PHẠM|khuôn phép
+围|wéi|VI|vây quanh
+添|tiān|THIÊM|thêm
+种|zhǒng|CHỦNG|loại, giống
+刘|liú|LƯU|họ Lưu
+四|sì|TỨ|bốn
+扩|kuò|KHUẾCH|mở rộng
+像|xiàng|TƯỢNG|giống, hình
+吗|ma|MA|(trợ từ hỏi)
+二|èr|NHỊ|hai
+估|gū|CỔ|ước lượng
+直|zhí|TRỰC|thẳng
+旧|jiù|CỰU|cũ
+隔|gé|CÁCH|ngăn cách
+千|qiān|THIÊN|nghìn
+左|zuǒ|TẢ|trái
+右|yòu|HỮU|phải
+民|mín|DÂN|dân
+币|bì|TỆ|tiền tệ
+美|měi|MỸ|đẹp, Mỹ
+元|yuán|NGUYÊN|đồng, khởi đầu
+盾|dùn|THUẪN|khiên, đồng VND
+块|kuài|KHỐI|cục, đồng (tiền)
+额|é|NGẠCH|số lượng tiền, trán
+张|zhāng|TRƯƠNG|tờ, mở ra, họ Trương
+份|fèn|PHẦN|phần, bản
+吨|dūn|ĐỐN|tấn
+斤|jīn|CÂN|cân (0,5kg)
+厘|lí|LY|ly, phân ly
+卷|juǎn|QUYỂN|cuộn
+增|zēng|TĂNG|tăng thêm
+共|gòng|CỘNG|cùng, cộng
+均|jūn|QUÂN|đều, bình quân
+至|zhì|CHÍ|đến, tới`);
+</script>
+<script>
+HVP.push(`足|zú|TÚC|chân, đủ
+够|gòu|CẤU|đủ
+初|chū|SƠ|đầu, sơ
+末|mò|MẠT|cuối, ngọn
+刚|gāng|CƯƠNG|vừa mới, cứng
+耽|dān|ĐAM|chậm trễ, mê
+抓|zhuā|TRẢO|nắm, tóm
+临|lín|LÂM|đến gần, tạm thời
+每|měi|MỖI|mỗi
+突|tū|ĐỘT|đột ngột, xông
+束|shù|THÚC|bó, kết thúc
+继|jì|KẾ|tiếp nối
+使|shǐ|SỬ|khiến, dùng, sứ
+需|xū|NHU|cần
+拿|ná|NÃ|cầm, lấy
+寄|jì|KÝ|gửi
+换|huàn|HOÁN|đổi
+择|zé|TRẠCH|chọn
+忘|wàng|VONG|quên
+希|xī|HY|mong, hiếm
+望|wàng|VỌNG|nhìn xa, mong
+借|jiè|TÁ|mượn, cho vay
+教|jiāo, jiào|GIÁO|dạy, giáo dục
+学|xué|HỌC|học
+映|yìng|ÁNH|chiếu, phản ánh
+严|yán|NGHIÊM|nghiêm khắc
+异|yì|DỊ|khác lạ
+仔|zǐ|TỬ|kỹ càng, con
+细|xì|TẾ|nhỏ, tỉ mỉ
+满|mǎn|MÃN|đầy, mãn
+稳|wěn|ỔN|vững, ổn định
+熟|shú|THỤC|chín, thành thạo
+净|jìng|TỊNH|sạch, tịnh
+累|lèi, lěi|LŨY|mệt; tích lũy
+难|nán|NAN|khó
+容|róng|DUNG|chứa, dung mạo
+食|shí|THỰC|ăn, thức ăn
+堂|táng|ĐƯỜNG|nhà lớn, sảnh
+宿|sù|TÚC|trọ, nghỉ đêm
+舍|shè|XÁ|nhà, xá
+楼|lóu|LÂU|lầu, tầng
+近|jìn|CẬN|gần
+旁|páng|BÀNG|bên cạnh
+州|zhōu|CHÂU|châu, vùng
+胡|hú|HỒ|họ Hồ, râu
+志|zhì|CHÍ|chí hướng, ghi
+河|hé|HÀ|sông
+区|qū|KHU|khu vực
+焊|hàn|HÀN|hàn (kim loại)
+短|duǎn|ĐOẢN|ngắn
+螺|luó|LOA|ốc, xoắn
+丝|sī|TY|tơ, sợi
+壳|ké|XÁC|vỏ
+池|chí|TRÌ|ao, pin
+尘|chén|TRẦN|bụi
+静|jìng|TĨNH|yên tĩnh
+冲|chōng|XUNG|xông, dập, xối
+喷|pēn|PHÚN|phun
+漆|qī|TẤT|sơn
+镀|dù|ĐỘ|mạ
+毛|máo|MAO|lông, ba via
+形|xíng|HÌNH|hình dạng
+味|wèi|VỊ|mùi, vị
+温|wēn|ÔN|ấm, nhiệt độ
+布|bù|BỐ|vải, bố trí
+裁|cái|TÀI|cắt, quyết
+缝|féng|PHÙNG|may, khe
+纫|rèn|NHẬN|khâu vá
+拉|lā|LẠP|kéo
+纽|niǔ|NỮU|nút, khuy
+熨|yùn|UẤT|là, ủi
+烫|tàng|THANG|nóng bỏng, là
+鞋|xié|HÀI|giày
+绣|xiù|TÚ|thêu
+花|huā|HOA|hoa, hoa văn
+洗|xǐ|TẨY|rửa, giặt
+毫|háo|HÀO|mảy may, mili
+扳|bān|BAN|vặn, bẻ
+称|chēng|XƯNG|gọi, cân
+首|shǒu|THỦ|đầu, đầu tiên
+溯|sù|TỐ|ngược dòng, truy
+善|shàn|THIỆN|tốt, giỏi
+衡|héng|HÀNH|cân bằng
+瓶|píng|BÌNH|bình, chai
+颈|jǐng|CẢNH|cổ
+薪|xīn|TÂN|lương, củi
+奖|jiǎng|TƯỞNG|thưởng
+劳|láo|LAO|lao động, nhọc
+动|dòng|ĐỘNG|động, chuyển
+辞|cí|TỪ|lời, từ chức
+脑|nǎo|NÃO|não, đầu óc
+密|mì|MẬT|kín, mật
+统|tǒng|THỐNG|thống nhất, hệ
+载|zài|TẢI|chở, tải
+传|chuán|TRUYỀN|truyền, chuyền
+频|pín|TẦN|tần suất
+网|wǎng|VÕNG|lưới, mạng
+络|luò|LẠC|mạng lưới
+待|dài|ĐÃI|đợi, đối đãi
+敬|jìng|KÍNH|kính trọng
+礼|lǐ|LỄ|lễ nghi, quà
+笑|xiào|TIẾU|cười
+盖|gài|CÁI|đậy, đóng dấu
+章|zhāng|CHƯƠNG|chương, con dấu
+审|shěn|THẨM|xét duyệt
+阿|ā|A|(tiền tố tên thân mật)
+铺|pù|PHỐ|cửa hàng, trải
+架|jià|GIÁ|giá đỡ, khung
+托|tuō|THÁC|nâng, ủy thác
+盘|pán|BÀN|mâm, khay, pallet
+缠|chán|TRIỀN|quấn, vướng
+膜|mó|MẠC|màng
+唛|mà|MẠ|mark (ký mã hiệu)
+盒|hé|HẠP|hộp
+潮|cháo|TRIỀU|thủy triều, ẩm
+碎|suì|TOÁI|vỡ vụn
+拖|tuō|THA|kéo, lê
+舱|cāng|THƯƠNG|khoang (tàu)
+滞|zhì|TRỆ|ứ đọng
+淡|dàn|ĐẠM|nhạt, ế
+型|xíng|HÌNH|kiểu, mẫu
+逐|zhú|TRỤC|từng, đuổi
+句|jù|CÚ|câu
+纪|jì|KỶ|kỷ luật, ghi chép
+指|zhǐ|CHỈ|ngón tay, chỉ
+潜|qián|TIỀM|ẩn, lặn
+词|cí|TỪ|từ ngữ
+速|sù|TỐC|nhanh, tốc độ
+山|shān|SƠN|núi
+筹|chóu|TRÙ|mưu tính, quân bài
+僵|jiāng|CƯƠNG|cứng đờ
+局|jú|CỤC|cục, cuộc, ván
+吃|chī|NGẬT|ăn
+亏|kuī|KHUY|thiệt, khuyết
+馈|kuì|QUỸ|tặng, phản hồi
+拍|pāi|PHÁCH|vỗ, chụp
+性|xìng|TÍNH|tính chất
+钱|qián|TIỀN|tiền
+组|zǔ|TỔ|tổ, nhóm
+刷|shuā|XOÁT|chải, quét
+噪|zào|TÁO|ồn ào
+罩|zhào|TRÁO|chụp, khẩu trang
+救|jiù|CỨU|cứu
+罚|fá|PHẠT|phạt
+轮|lún|LUÂN|bánh xe, luân phiên
+顶|dǐng|ĐỈNH|đỉnh, đội, thay
+旷|kuàng|KHOÁNG|rộng, bỏ việc
+傅|fù|PHÓ|thầy dạy (师傅)
+例|lì|LỆ|lệ, ví dụ
+值|zhí|TRỊ|giá trị, trực
+升|shēng|THĂNG|lên, thăng, lít
+除|chú|TRỪ|trừ, bỏ
+简|jiǎn|GIẢN|đơn giản, thẻ tre
+历|lì|LỊCH|lịch sử, trải qua
+聘|pìn|SÍNH|mời, tuyển
+秘|mì|BÍ|bí mật
+普|pǔ|PHỔ|phổ thông
+习|xí|TẬP|tập luyện, thói quen
+团|tuán|ĐOÀN|đoàn, khối
+队|duì|ĐỘI|đội
+聚|jù|TỤ|tụ họp
+餐|cān|XAN|bữa ăn
+破|pò|PHÁ|vỡ, phá
+独|dú|ĐỘC|một mình, độc
+展|zhǎn|TRIỂN|mở ra, triển lãm
+砍|kǎn|KHẢM|chặt, mặc cả
+久|jiǔ|CỬU|lâu
+哪|nǎ|NA|nào
+虽|suī|TUY|tuy nhiên
+而|ér|NHI|mà, và
+且|qiě|THẢ|vả lại, hãy
+听|tīng|THÍNH|nghe
+恭|gōng|CUNG|cung kính
+喜|xǐ|HỶ|vui mừng
+祝|zhù|CHÚC|chúc
+锈|xiù|TÚ|gỉ sét
+钢|gāng|CƯƠNG|thép
+铝|lǚ|LỮ|nhôm
+铜|tóng|ĐỒNG|đồng (kim loại)
+铁|tiě|THIẾT|sắt
+玻|bō|PHA|thủy tinh
+璃|lí|LY|thủy tinh
+木|mù|MỘC|gỗ, cây
+皮|pí|BÌ|da, bì
+革|gé|CÁCH|da thuộc, cách mạng
+棉|mián|MIÊN|bông
+橡|xiàng|TƯỢNG|cao su, cây sồi
+沫|mò|MẠT|bọt
+颜|yán|NHAN|màu sắc, dung nhan
+红|hóng|HỒNG|đỏ
+蓝|lán|LAM|xanh lam
+黑|hēi|HẮC|đen
+灰|huī|HÔI|tro, xám
+绿|lǜ|LỤC|xanh lá
+黄|huáng|HOÀNG|vàng
+厚|hòu|HẬU|dày, hậu hĩnh
+薄|báo|BẠC|mỏng
+硬|yìng|NGẠNH|cứng
+软|ruǎn|NHUYỄN|mềm
+轻|qīng|KHINH|nhẹ
+痕|hén|NGẤN|vết, ngấn
+污|wū|Ô|bẩn, ô nhiễm
+渍|zì|TÍCH|vết bẩn
+裂|liè|LIỆT|nứt, rạn
+农|nóng|NÔNG|nông nghiệp
+鲜|xiān|TIÊN|tươi
+冷|lěng|LÃNH|lạnh
+藏|cáng|TÀNG|cất giấu
+醒|xǐng|TỈNH|tỉnh dậy, nhắc
+释|shì|THÍCH|giải thích
+扬|yáng|DƯƠNG|giương, nêu
+评|píng|BÌNH|bình luận
+邀|yāo|YÊU|mời
+拜|bài|BÁI|lạy, thăm viếng
+毕|bì|TẤT|xong, tốt nghiệp
+菜|cài|THÁI|rau, món ăn
+忌|jì|KỴ|kiêng kỵ
+杯|bēi|BÔI|cốc, ly
+茶|chá|TRÀ|trà
+咖|kā|CA|(cà phê)
+啡|fēi|PHÊ|(cà phê)
+描|miáo|MIÊU|vẽ, quét, mô tả
+贸|mào|MẬU|mậu dịch
+碑|bēi|BI|bia đá, tiếng tăm
+摆|bǎi|BÃI|bày, đặt
+堆|duī|ĐÔI|đống, chất
+挑|tiāo|KHIÊU|chọn, gánh
+类|lèi|LOẠI|loại
+撕|sī|TƯ|xé
+擦|cā|SÁT|lau, chà
+叉|chā|XOA|chĩa, chéo
+梯|tī|THANG|thang
+扇|shàn|PHIẾN|quạt, cánh cửa
+灯|dēng|ĐĂNG|đèn
+插|chā|SÁP|cắm
+座|zuò|TỌA|chỗ ngồi, ổ
+刀|dāo|ĐAO|dao
+声|shēng|THANH|tiếng, thanh
+儿|ér|NHI|con trẻ, (hậu tố)
+肯|kěn|KHẲNG|chịu, khẳng định
+各|gè|CÁC|các, mỗi
+己|jǐ|KỶ|mình, bản thân
+找|zhǎo|TRẢO|tìm, trả lại tiền
+桌|zhuō|TRÁC|bàn
+钥|yào|DƯỢC|chìa khóa
+匙|shi|THI|thìa, chìa
+跌|diē|ĐIỆT|ngã, rớt giá
+含|hán|HÀM|ngậm, chứa
+拟|nǐ|NGHĨ|dự thảo, mô phỏng
+欢|huān|HOAN|vui vẻ
+迎|yíng|NGHÊNH|đón`);
+</script>
+<script>
 /* ================= STATE ================= */
 const DEF = {xp:0,skills:{chinese:8,mfg:0,office:0,trade:0,interp:0,nego:0},saved:{},done:{lesson:{},mission:{},scen:{},rp:{},day:{}},speak:0,visits:0};
 let S;
@@ -4057,7 +4922,9 @@ const QUIZMAP={
  s7a:{type:'vocab',ind:'nego'}, s7b:{type:'negoexpr',ids:['price','delivery']},
  s7c:{type:'negoexpr',ids:['quality','contract','payment','complaint']}, s7f:{type:'interpq',set:'ip3'}
 };
-const AUTOREQ={lesson:'hoàn thành đủ 10 bước bài học',scen:'đạt điểm tuyệt đối (chọn phương án tốt nhất ở mọi bước)',rp:'đạt ≥ 90/100 điểm',mission:'đạt 100% điểm mission',day:'xử lý chuẩn cả 7 mốc (100%)',saved:'lưu đủ số từ yêu cầu'};
+const AUTOREQ={lesson:'hoàn thành đủ 10 bước bài học',scen:'đạt điểm tuyệt đối (chọn phương án tốt nhất ở mọi bước)',rp:'đạt ≥ 90/100 điểm',mission:'đạt 100% điểm mission',day:'xử lý chuẩn cả 7 mốc (100%)',saved:'lưu đủ số từ yêu cầu',write:'tự viết đúng (không sai nét nào) đủ số chữ yêu cầu'};
+/* hook để module khác bổ sung loại kiểm tra / nội dung / mục tiêu */
+const EXTQUIZ={},EXTCONTENT={},EXTOUT={},EXTDONE={};
 function stepDone(st){
  if(st.auto){
   const [kind,id]=st.auto.split(':');
@@ -4067,6 +4934,7 @@ function stepDone(st){
   if(kind==='mission')return S.done.mission[id]===100;
   if(kind==='day')return !!S.done.day.completed&&S.done.day.score===100;
   if(kind==='saved')return Object.keys(S.saved).length>=+id;
+  if(EXTDONE[kind])return EXTDONE[kind](id);
  }
  return !!(S.done.road&&S.done.road[st.k]);
 }
@@ -4091,6 +4959,7 @@ function buildQuiz(spec){
   return {prompt,sub,opts,a:opts.indexOf(correct)};
  };
  let qs=[];
+ if(EXTQUIZ[spec.type])return EXTQUIZ[spec.type](mk,shuffleA);
  if(spec.type==='vocab'){
   let ws=V.filter(w=>w.ind===spec.ind&&(!spec.gs||spec.gs.includes(w.g)));
   const pool=ws.map(w=>w.v);
@@ -4198,6 +5067,7 @@ function stepOutcomes(st){
   return map[kind]||[];
  }
  if(!sp)return [];
+ if(EXTOUT[sp.type])return EXTOUT[sp.type]();
  if(sp.type==='vocab'){const ws=stepWords(sp);const nco=ws.reduce((a,w)=>a+(w.co?w.co.length:0),0);
   return [`Đọc đúng (pinyin + thanh điệu) và hiểu nghĩa ${ws.length} từ trọng tâm`,`Dùng được ${nco} cụm từ đi kèm trong câu thực tế`,`Vượt bài kiểm tra ${Math.min(10,ws.length)} câu với kết quả 100%`];}
  if(sp.type==='sent')return ['Nghe hiểu từng câu không cần nhìn chữ','Shadowing trôi chảy: nghe 0.6x → nói theo → nghe 1x','Vượt kiểm tra chọn nghĩa 8 câu (100%)'];
@@ -4212,6 +5082,7 @@ function stepWords(sp){return V.filter(w=>w.ind===sp.ind&&(!sp.gs||sp.gs.include
 function stepContentHTML(st){
  const sp=QUIZMAP[st.k];
  if(!sp)return '';
+ if(EXTCONTENT[sp.type])return EXTCONTENT[sp.type]();
  if(sp.type==='vocab'){
   const ws=stepWords(sp);
   const groups=META.groups[sp.ind]||[];
@@ -4421,10 +5292,463 @@ function showOnboarding(){
  draw();
 }
 
+/* INIT nằm ở file cuối cùng (sau khi module Viết chữ đã đăng ký) */
+</script>
+<style>
+/* ===== WRITING MODULE ===== */
+.hz-box{width:100%;aspect-ratio:1;max-width:220px;position:relative;background:var(--surface);border-radius:12px;border:1px solid var(--border)}
+.hz-box svg{display:block;width:100%;height:100%}
+.hz-grid{position:absolute;inset:0;pointer-events:none}
+.hz-grid::before,.hz-grid::after{content:"";position:absolute;background:var(--border2);opacity:.7}
+.hz-grid::before{left:50%;top:6%;bottom:6%;width:1px;border-left:1px dashed var(--border2);background:none}
+.hz-grid::after{top:50%;left:6%;right:6%;height:1px;border-top:1px dashed var(--border2);background:none}
+.hz-card{padding:14px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.hz-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.hz-char{font-family:'Noto Serif SC','Noto Sans SC',serif;font-size:40px;line-height:1.1;font-weight:900}
+.hz-hv{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--accent);margin-top:2px}
+.hz-mini{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px;border:1px solid var(--border2);border-radius:10px;cursor:pointer;background:var(--surface);transition:all .15s}
+.hz-mini:hover{border-color:var(--accent);background:var(--accent-soft)}
+.hz-mini b{font-family:'Noto Sans SC',sans-serif;font-size:22px;line-height:1}
+.hz-mini span{font-size:9.5px;font-weight:800;color:var(--accent);letter-spacing:.03em}
+.stroke-demo{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.stroke-glyph{font-family:'Noto Serif SC',serif;font-size:30px;width:52px;height:52px;display:grid;place-items:center;border:1px dashed var(--border2);border-radius:10px;flex-shrink:0}
+.rule-num{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}
+.hz-warn{background:var(--warn-soft);color:var(--warn);padding:12px 16px;border-radius:12px;font-size:13px;margin-bottom:14px}
+.hz-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.hz-fallback{display:grid;place-items:center;height:100%;width:100%;text-align:center;padding:4px;overflow:hidden}
+</style>
+<script>
+/* ===== parse từ điển Hán Việt ===== */
+const HV={};
+HVP.join('\n').split('\n').forEach(l=>{const p=l.split('|');if(p.length>=4)HV[p[0]]={p:p[1],hv:p[2],m:p[3]};});
+
+/* ===== tần suất chữ trong kho từ ===== */
+const CHARFREQ={},CHARWORDS={};
+V.forEach(w=>{[...w.h].forEach(c=>{if(c>='一'&&c<='鿿'){CHARFREQ[c]=(CHARFREQ[c]||0)+1;(CHARWORDS[c]=CHARWORDS[c]||[]).push(w.id);}});});
+const ALLCHARS=Object.keys(CHARFREQ).sort((a,b)=>CHARFREQ[b]-CHARFREQ[a]);
+
+/* ===== 8 NÉT CƠ BẢN ===== */
+const STROKES=[
+ ['一','横','héng','Nét ngang','Kéo thẳng từ TRÁI sang PHẢI, hơi nhích lên ở cuối. Không bao giờ viết ngược từ phải sang trái.','一 十 三 工'],
+ ['丨','竖','shù','Nét sổ','Kéo thẳng từ TRÊN xuống DƯỚI. Giữ thật thẳng — đây là nét "xương sống" của chữ.','十 中 上 干'],
+ ['丿','撇','piě','Nét phẩy','Từ trên bên PHẢI hất xuống bên TRÁI, nhẹ dần ở đuôi.','人 大 生 千'],
+ ['㇏','捺','nà','Nét mác','Từ trên bên TRÁI kéo xuống bên PHẢI, nặng dần rồi bè ra ở cuối.','人 大 天 这'],
+ ['丶','点','diǎn','Nét chấm','Chấm ngắn, đưa bút từ trên xuống, thường nghiêng phải.','小 主 家 为'],
+ ['㇀','提','tí','Nét hất','Từ dưới bên trái HẤT LÊN phía phải. Rất hay gặp ở bộ 扌 và 氵.','打 汇 报 江'],
+ ['乛','折','zhé','Nét gập','Một nét liền nhưng đổi hướng giữa chừng (ngang rồi gập xuống) — KHÔNG nhấc bút.','口 日 中 品'],
+ ['亅','钩','gōu','Nét móc','Cuối nét hất ngược lại một móc nhỏ.','小 了 事 到']
+];
+/* ===== 7 QUY TẮC BÚT THUẬN ===== */
+const SRULES=[
+ ['先横后竖','xiān héng hòu shù','Ngang trước, sổ sau','Gặp nét ngang cắt nét sổ thì viết ngang trước.','十 干 王 丰','十'],
+ ['先撇后捺','xiān piě hòu nà','Phẩy trước, mác sau','Hai nét xiên bắt chéo: phẩy (trái) luôn đi trước mác (phải).','人 八 大 天','人'],
+ ['从上到下','cóng shàng dào xià','Trên trước, dưới sau','Chữ xếp tầng thì viết tầng trên trước.','三 员 品 意','三'],
+ ['从左到右','cóng zuǒ dào yòu','Trái trước, phải sau','Chữ có bộ bên trái thì viết bộ trái trước, thân phải sau.','你 好 现 时','你'],
+ ['先外后内','xiān wài hòu nèi','Ngoài trước, trong sau','Khung bao ngoài viết trước, ruột bên trong viết sau.','月 用 同 问','同'],
+ ['先里头后封口','xiān lǐtou hòu fēngkǒu','Vào nhà trước, đóng cửa sau','Khung kín: viết 3 cạnh → ruột bên trong → cuối cùng mới đóng nét dưới.','国 回 日 田','国'],
+ ['先中间后两边','xiān zhōngjiān hòu liǎngbiān','Giữa trước, hai bên sau','Chữ đối xứng thì nét giữa viết trước, rồi mới đến hai bên.','小 水 办 米','小']
+];
+/* ===== BỘ THỦ thường gặp trong tiếng Trung công sở ===== */
+const RADICALS=[
+ ['亻','单人旁','NHÂN','người','Chữ có bộ này thường liên quan đến CON NGƯỜI hoặc hành vi của người.','你 他 们 件 位 供 保 促'],
+ ['讠','言字旁','NGÔN','lời nói','Liên quan đến NÓI NĂNG, ngôn ngữ, giao tiếp — cực nhiều trong tiếng Trung công sở.','请 说 话 谈 议 语 译 认 订 记 谢 询 证 诉'],
+ ['氵','三点水','THỦY','nước','Liên quan đến NƯỚC, chất lỏng, dòng chảy.','港 海 清 消 漏 温 满 洗 添 汇 没 流'],
+ ['扌','提手旁','THỦ','tay','Liên quan đến ĐỘNG TÁC TAY — nhóm động từ thao tác trong nhà xưởng.','打 提 接 报 换 找 拉 推 抽 拍 挑 摆 撕 擦 插 扳 抓 搬'],
+ ['木','木字旁','MỘC','gỗ, cây','Liên quan đến GỖ, cây cối, đồ làm bằng gỗ.','材 检 样 机 板 楼 桌 模 标 柜 概'],
+ ['钅','金字旁','KIM','kim loại','Liên quan đến KIM LOẠI — rất hay gặp trong nhà máy cơ khí.','钢 铝 铜 铁 锈 镀 钥 钱 销 锁'],
+ ['车','车字旁','XA','xe','Liên quan đến XE CỘ, vận chuyển, bánh xe.','轮 转 输 较 软 载'],
+ ['贝','贝字旁','BỐI','vỏ sò = tiền','Người xưa dùng vỏ sò làm tiền → chữ có 贝 hầu hết liên quan đến TIỀN BẠC, mua bán.','货 贵 费 账 赔 购 贸 赢 责 质 资 贴'],
+ ['辶','走之底','SƯỚC','đi, di chuyển','Liên quan đến ĐI LẠI, vận chuyển, tiến trình.','进 运 送 迟 返 通 达 逐 迎 避 递 追 边'],
+ ['纟','绞丝旁','MỊCH','sợi tơ','Liên quan đến SỢI, dây, vải vóc, liên kết.','线 纸 组 细 纪 结 给 绍 练 缠 绣 绿 红 续'],
+ ['宀','宝盖头','MIÊN','mái nhà','Liên quan đến NHÀ CỬA, không gian trong nhà.','客 家 安 定 完 室 宿 密 实 审 寄 容'],
+ ['口','口字旁','KHẨU','miệng','Liên quan đến MIỆNG: ăn, nói, kêu — và cả cửa/lỗ.','吃 叫 吗 吧 呼 品 号 员 售 咖 啡 听'],
+ ['日','日字旁','NHẬT','mặt trời, ngày','Liên quan đến MẶT TRỜI, thời gian, ngày tháng.','时 明 早 晚 是 暂 旺 昨'],
+ ['忄','竖心旁','TÂM','trái tim','Liên quan đến TÂM TRẠNG, cảm xúc, suy nghĩ.','快 慢 忙 情 怪 惯 懂'],
+ ['刂','立刀旁','ĐAO','dao','Liên quan đến CẮT, chặt, phân chia.','到 制 剪 划 判 利 刷 别'],
+ ['土','提土旁','THỔ','đất','Liên quan đến ĐẤT ĐAI, nơi chốn, xây dựng.','地 场 坏 增 培 塑 堆 均 型 城'],
+ ['石','石字旁','THẠCH','đá','Liên quan đến ĐÁ, vật cứng, khoáng vật.','确 碎 破 硬 碑 砍 础'],
+ ['页','页字旁','HIỆT','đầu, trang','Nguyên nghĩa là ĐẦU — chữ có 页 thường liên quan đến đầu/mặt hoặc trang giấy.','顺 顶 颜 频 题 预 领 额 颈'],
+ ['阝','左耳旁','PHỤ','gò đất','Bên TRÁI nghĩa là gò/đồi, nơi chốn; bên PHẢI nghĩa là làng ấp.','防 阿 隔 陈 险 除 陷 附 队 院'],
+ ['广','广字头','NGHIỄM','mái che','Liên quan đến NHÀ XƯỞNG, công trình có mái.','库 广 座 应 度 废 床 店'],
+ ['火','火字旁','HỎA','lửa','Liên quan đến LỬA, nhiệt, đốt (dạng 灬 nằm dưới chữ).','灯 烫 烦 热 照 熟'],
+ ['舟','舟字旁','CHU','thuyền','Liên quan đến TÀU THUYỀN, vận tải biển.','船 舱 航 般'],
+ ['米','米字旁','MỄ','gạo','Liên quan đến GẠO, hạt, lương thực.','米 类 粉 精 粘'],
+ ['攵','反文旁','PHỘC','đánh, gõ','Nghĩa gốc là cầm gậy đánh → mang nghĩa TÁC ĐỘNG, thay đổi.','收 改 教 效 数 故 敬 政']
+];
+/* ===== câu hỏi kiểm tra về nét & quy tắc ===== */
+const WQUIZ_STROKE=[
+ ['Nét 横 (héng) viết theo hướng nào?',['Từ trái sang phải','Từ phải sang trái','Từ trên xuống dưới','Từ dưới lên trên'],0],
+ ['Nét 竖 (shù) viết theo hướng nào?',['Từ trên xuống dưới','Từ dưới lên trên','Từ trái sang phải','Xoáy tròn'],0],
+ ['Chữ 十 viết nét nào trước?',['Nét ngang 一','Nét sổ 丨','Nét nào trước cũng được','Nét chấm'],0],
+ ['Chữ 人 viết nét nào trước?',['Nét phẩy 丿 (bên trái)','Nét mác ㇏ (bên phải)','Cả hai cùng lúc','Không có quy tắc'],0],
+ ['Chữ 国 (khung kín): nét đóng khung phía dưới viết khi nào?',['Cuối cùng — "vào nhà trước, đóng cửa sau"','Đầu tiên','Ngay sau nét ngang trên','Trước phần ruột bên trong'],0],
+ ['Chữ 小 viết theo thứ tự nào?',['Nét giữa trước, rồi hai bên','Trái → giữa → phải','Phải → giữa → trái','Hai bên trước, giữa sau'],0],
+ ['Chữ 你 (có bộ 亻 bên trái) viết phần nào trước?',['Bộ 亻 bên trái','Phần thân bên phải','Nét chấm cuối','Từ dưới lên'],0],
+ ['Nét 提 (tí) là nét gì?',['Nét hất chéo lên phía trên bên phải','Nét chấm','Nét ngang dài','Nét móc xuống'],0],
+ ['Nét 折 (zhé) được viết như thế nào?',['Một nét liền có đổi hướng, không nhấc bút','Hai nét riêng biệt','Luôn phải nhấc bút giữa chừng','Chỉ dùng trong chữ phồn thể'],0],
+ ['Vì sao phải viết đúng bút thuận?',['Chữ cân đối, viết nhanh, và đọc được chữ viết tay của người khác','Chỉ để cho đẹp, không ảnh hưởng gì','Vì máy tính yêu cầu','Không cần thiết trong công việc'],0],
+ ['Chữ 三 viết theo thứ tự nào?',['Từ nét ngang trên xuống nét ngang dưới','Từ dưới lên trên','Nét giữa trước','Nét dài nhất trước'],0],
+ ['Bộ 扌 (đề thủ) gợi ý chữ đó liên quan đến gì?',['Động tác của tay','Nước','Lời nói','Kim loại'],0]
+];
+</script>
+<script>
+/* ================= HANZI WRITER LOADER (có dự phòng) ================= */
+let HWstate='idle', HWpromise=null;
+function loadHW(){
+ if(HWpromise)return HWpromise;
+ HWpromise=new Promise((res,rej)=>{
+  if(window.HanziWriter){HWstate='ok';return res(true);}
+  HWstate='loading';
+  const srcs=['https://cdnjs.cloudflare.com/ajax/libs/hanzi-writer/3.5.0/hanzi-writer.min.js',
+              'https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js',
+              'https://unpkg.com/hanzi-writer@3.5.0/dist/hanzi-writer.min.js'];
+  let i=0;
+  const tryNext=()=>{
+   if(i>=srcs.length){HWstate='fail';return rej(new Error('cdn'));}
+   const s=document.createElement('script');s.src=srcs[i++];
+   s.onload=()=>{if(window.HanziWriter){HWstate='ok';res(true);}else tryNext();};
+   s.onerror=tryNext;
+   document.head.appendChild(s);
+  };
+  tryNext();
+ });
+ return HWpromise;
+}
+function tok(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#B93A2B'}
+const HWOPT=()=>({width:200,height:200,padding:6,showOutline:true,showCharacter:false,
+ strokeAnimationSpeed:1,delayBetweenStrokes:280,delayBetweenLoops:1400,
+ strokeColor:tok('--accent'),outlineColor:tok('--border2'),radicalColor:tok('--mfg'),
+ drawingColor:tok('--accent'),drawingWidth:22,highlightColor:tok('--good')});
+const _writers=[];
+function clearWriters(){_writers.forEach(w=>{try{w.hideCharacter&&w.cancelQuiz&&w.cancelQuiz()}catch(e){}});_writers.length=0;}
+/* Tạo 1 ô viết chữ. mode: 'anim' | 'quiz' */
+function mountHZ(box,ch,mode,cb){
+ box.innerHTML='<div style="display:grid;place-items:center;height:100%;color:var(--ink3);font-size:12px">Đang tải…</div>';
+ loadHW().then(()=>{
+  box.innerHTML='<div class="hz-grid"></div>';
+  const w=HanziWriter.create(box,ch,HWOPT());
+  _writers.push(w);
+  if(mode==='quiz'){
+   let mistakes=0;
+   w.quiz({showHintAfterMisses:2,
+    onMistake:()=>{mistakes++;if(cb)cb('mistake',mistakes);},
+    onComplete:d=>{if(cb)cb('done',d.totalMistakes);}});
+  }else{
+   w.loopCharacterAnimation();
+  }
+  if(cb)cb('ready',w);
+ }).catch(()=>{
+  const w=box.clientWidth||120, big=w>130;
+  box.innerHTML=`<div class="hz-fallback"><div style="font-family:'Noto Serif SC',serif;font-weight:900;line-height:1;font-size:${Math.max(22,Math.round(w*0.42))}px">${esc(ch)}</div>${big?'<div style="font-size:10px;color:var(--ink3);margin-top:6px">cần internet để xem nét</div>':''}</div>`;
+  if(cb)cb('fail');
+  if(!window._hwWarned){window._hwWarned=true;
+   if(currentView==='write')setTimeout(()=>{const v=$('#view-write');if(v)RENDER.write(v);},60);}
+ });
+}
+/* ================= CHI TIẾT MỘT CHỮ ================= */
+window.openChar=ch=>{
+ const info=HV[ch]||{p:'',hv:'—',m:''};
+ const words=(CHARWORDS[ch]||[]).slice(0,10).map(id=>VMAP[id]).filter(Boolean);
+ const rad=RADICALS.find(r=>r[5].split(' ').includes(ch));
+ const okMark=S.write&&S.write.ok&&S.write.ok[ch];
+ $('#modalBox').innerHTML=`
+  <button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+   <div style="flex:0 0 200px;max-width:200px">
+     <div class="hz-box" id="hzMain"></div>
+     <div class="hz-tools">
+      <button class="btn btn-sm" onclick="HZACT('anim')">▶ Xem lại</button>
+      <button class="btn btn-sm" onclick="HZACT('slow')">🐢 Chậm</button>
+      <button class="btn btn-sm btn-primary" onclick="HZACT('quiz')">✍ Tự viết thử</button>
+     </div>
+     <div id="hzMsg" style="font-size:12px;text-align:center;margin-top:8px;min-height:18px;color:var(--ink3)">${okMark?'<span style="color:var(--good);font-weight:700">✓ Bạn đã viết đúng chữ này</span>':''}</div>
+   </div>
+   <div style="flex:1;min-width:220px">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+     <span class="zh" style="font-size:34px;font-weight:900">${esc(ch)}</span>
+     <span class="pinyin" style="font-size:16px">${esc(info.p)}</span>
+     ${spkBtn(ch)}
+    </div>
+    <div style="margin-top:6px"><span class="chip chip-nego" style="font-size:13px;letter-spacing:.04em">âm Hán Việt: ${esc(info.hv)}</span>
+    <span id="hzCount" class="chip chip-core"></span></div>
+    <div style="font-size:13.5px;color:var(--ink2);margin-top:8px">Nghĩa gốc: <b style="color:var(--ink)">${esc(info.m||'—')}</b></div>
+    ${rad?`<div class="mrow"><b>Bộ thủ</b><div><span class="zh" style="font-size:18px">${esc(rad[0])}</span> ${esc(rad[1])} · <b>${esc(rad[2])}</b> — ${esc(rad[3])}<div style="font-size:12.5px;color:var(--ink2);margin-top:2px">${esc(rad[4])}</div></div></div>`:''}
+    ${words.length?`<div class="mrow"><b>Từ dùng chữ này</b><div>${words.map(w=>`<span class="rel-chip" onclick="closeModal();openVocab('${w.id}')">${esc(w.h)} <span style="color:var(--ink3);font-size:11px">${esc(w.v)}</span></span>`).join('')}</div></div>`:''}
+    <div class="mrow"><b>Mẹo nhớ</b><div style="font-size:13px">Người Việt có lợi thế lớn: âm Hán Việt <b>${esc(info.hv)}</b> chính là "cầu nối" — gặp chữ này trong từ mới, hãy đọc thầm âm Hán Việt trước, nghĩa sẽ hiện ra ngay.</div></div>
+   </div>
+  </div>`;
+ $('#modalScrim').classList.add('show');
+ const box=$('#hzMain');
+ window.HZACT=act=>{
+  const msg=$('#hzMsg');
+  if(act==='quiz'){
+   msg.innerHTML='Dùng chuột/ngón tay viết theo đúng thứ tự nét…';
+   mountHZ(box,ch,'quiz',(ev,val)=>{
+    if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Sai nét ${val} lần — sai 2 lần sẽ có gợi ý</span>`;
+    if(ev==='done'){
+     S.write=S.write||{ok:{},tries:{}};S.write.tries[ch]=(S.write.tries[ch]||0)+1;
+     if(val===0){S.write.ok[ch]=true;addXP(3);msg.innerHTML='<span style="color:var(--good);font-weight:700">✓ Hoàn hảo! Không sai nét nào.</span>';}
+     else msg.innerHTML=`<span style="color:var(--warn)">Xong — sai ${val} nét. Viết lại cho tới khi không sai nét nào nhé.</span>`;
+     save();
+    }
+   });
+  }else{
+   msg.innerHTML=act==='slow'?'Đang chạy chậm để bạn nhìn rõ từng nét':'';
+   if(act==='slow'){
+    box.innerHTML='<div style="display:grid;place-items:center;height:100%;color:var(--ink3);font-size:12px">Đang tải…</div>';
+    loadHW().then(()=>{box.innerHTML='<div class="hz-grid"></div>';
+     const w=HanziWriter.create(box,ch,Object.assign(HWOPT(),{strokeAnimationSpeed:0.3,delayBetweenStrokes:950}));
+     _writers.push(w);w.loopCharacterAnimation();}).catch(()=>mountHZ(box,ch,'anim'));
+   }else mountHZ(box,ch,'anim');
+  }
+ };
+ HZACT('anim');
+ loadHW().then(()=>HanziWriter.loadCharacterData(ch)).then(d=>{
+  const el=$('#hzCount');if(el&&d&&d.strokes)el.textContent=d.strokes.length+' nét';
+ }).catch(()=>{});
+};
+/* ================= VIEW: VIẾT CHỮ HÁN ================= */
+const WTABS=[['basics','Nét & quy tắc','笔顺'],['radical','Bộ thủ','部首'],['lookup','Tra chữ','查字'],['practice','Luyện viết','练字']];
+RENDER.write=(el,param)=>{
+ clearWriters();
+ if(typeof param==='string')el._tab=param;
+ const tab=el._tab||'basics';
+ const okN=Object.keys((S.write&&S.write.ok)||{}).length;
+ let body='';
+ if(tab==='basics')body=writeBasicsHTML();
+ if(tab==='radical')body=writeRadicalHTML();
+ if(tab==='lookup')body=writeLookupHTML(el);
+ if(tab==='practice')body=writePracticeHTML(el);
+ el.innerHTML=pageHead('Writing System · 书写','书','Cách viết từng chữ Hán',
+  'Viết tay đúng bút thuận không chỉ để chữ đẹp: nó giúp bạn NHỚ chữ lâu hơn nhiều lần, đọc được chữ viết tay của đồng nghiệp Trung Quốc, và tra được từ điển. Kho chữ: '+ALLCHARS.length+' chữ Hán trong toàn bộ từ vựng — mỗi chữ có video nét viết, số nét, âm Hán Việt và ô tập viết.')+
+ `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+   <div class="toggle-row" style="margin:0">${WTABS.map(t=>`<button class="toggle ${tab===t[0]?'on':''}" onclick="GO('write','${t[0]}')">${t[1]} <span class="zh" style="opacity:.6">${t[2]}</span></button>`).join('')}</div>
+   <span class="chip chip-good num" style="margin-left:auto">✍ Đã viết đúng ${okN}/${ALLCHARS.length} chữ</span>
+  </div>${body}`;
+ if(tab==='basics')mountBasics();
+ if(tab==='radical')mountRadicals();
+ if(tab==='lookup')mountLookup(el);
+ if(tab==='practice')mountPractice(el);
+};
+function hwWarn(){return HWstate==='fail'?`<div class="hz-warn">⚠ Không tải được thư viện nét chữ (cần kết nối internet). Bạn vẫn xem được quy tắc bút thuận, bộ thủ và âm Hán Việt bên dưới — phần video nét viết sẽ hoạt động lại khi có mạng.</div>`:''}
+
+function writeBasicsHTML(){
+ return hwWarn()+
+ `<div class="card card-pad" style="border-left:4px solid var(--accent);margin-bottom:18px">
+   <b>Vì sao người Việt nên học viết chữ Hán?</b>
+   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">
+   ① <b>Nhớ lâu hơn</b> — tay viết một lần bằng mắt nhìn năm lần. ② <b>Đọc được chữ viết tay</b> của quản lý Trung Quốc trên phiếu giao ca, bản vẽ, ghi chú. ③ <b>Ký và điền biểu mẫu</b> — 签字, 填表 là việc hằng ngày. ④ <b>Phân biệt chữ gần giống</b>: 木/本, 目/日, 白/百, 千/干 — chỉ khi tự viết bạn mới không lẫn.</div></div>
+  <div class="section-label">8 nét cơ bản · 基本笔画</div>
+  <div class="grid g2">${STROKES.map((s,i)=>`
+   <div class="card card-pad">
+    <div class="stroke-demo">
+     <div class="stroke-glyph">${esc(s[0])}</div>
+     <div style="flex:1;min-width:150px">
+      <b class="zh" style="font-size:16px">${esc(s[1])}</b> <span class="pinyin">${esc(s[2])}</span>
+      <div style="font-weight:700;font-size:13.5px">${esc(s[3])}</div>
+      <div style="font-size:12.5px;color:var(--ink2);margin-top:3px">${esc(s[4])}</div>
+      <div style="font-size:12.5px;margin-top:5px">Chữ có nét này: <span class="zh" style="font-size:15px">${esc(s[5])}</span></div>
+     </div>
+     <div class="hz-box" style="width:96px;height:96px;flex-shrink:0" data-hz="${esc(s[5].split(' ')[0])}"></div>
+    </div></div>`).join('')}</div>
+  <div class="section-label">7 quy tắc bút thuận · 笔顺规则</div>
+  <div class="grid g2">${SRULES.map((r,i)=>`
+   <div class="card card-pad">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+     <div class="rule-num num">${i+1}</div>
+     <div style="flex:1">
+      <b class="zh" style="font-size:16px">${esc(r[0])}</b> <span class="pinyin">${esc(r[1])}</span>
+      <div style="font-weight:700;font-size:14px;color:var(--accent-ink)">${esc(r[2])}</div>
+      <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc(r[3])}</div>
+      <div style="font-size:13px;margin-top:6px">Ví dụ: <span class="zh" style="font-size:17px">${esc(r[4])}</span></div>
+     </div>
+     <div class="hz-box" style="width:110px;height:110px;flex-shrink:0" data-hz="${esc(r[5])}"></div>
+    </div></div>`).join('')}</div>
+  <div class="card card-pad" style="margin-top:16px;font-size:13px;color:var(--ink2)">
+   <b>Mẹo luyện tay:</b> viết mỗi chữ mới 5 lần trên giấy ô ly (田字格) ngay khi học từ đó — nhiều hơn 5 lần là phí thời gian, ít hơn thì không đọng lại. Sau đó dùng ô <b>✍ Tự viết thử</b> trong app để kiểm tra thứ tự nét.</div>`;
+}
+function mountBasics(){document.querySelectorAll('#view-write .hz-box[data-hz]').forEach(b=>mountHZ(b,b.dataset.hz,'anim'));}
+
+function writeRadicalHTML(){
+ return hwWarn()+
+ `<div class="card card-pad" style="border-left:4px solid var(--mfg);margin-bottom:18px">
+   <b>Bộ thủ = "gốc nghĩa" của chữ Hán</b>
+   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Mỗi chữ Hán thường gồm <b>bộ thủ</b> (gợi ý nghĩa) + <b>phần âm</b> (gợi ý cách đọc). Biết bộ thủ, bạn đoán được nghĩa của chữ chưa từng gặp: thấy 贝 → chắc chắn liên quan đến tiền (货 hàng, 费 phí, 账 tài khoản); thấy 扌 → liên quan đến tay (搬 khuân, 擦 lau, 插 cắm). Đây là cách nhớ chữ nhanh nhất — nhanh hơn học vẹt rất nhiều.</div></div>
+  <div class="grid g2">${RADICALS.map(r=>{
+   const chars=r[5].split(' ').filter(c=>CHARFREQ[c]).slice(0,8);
+   const words=[];
+   chars.forEach(c=>{(CHARWORDS[c]||[]).slice(0,1).forEach(id=>{const w=VMAP[id];if(w&&words.length<4&&!words.find(x=>x.id===w.id))words.push(w);})});
+   return `<div class="card card-pad">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+     <div class="hz-box" style="width:88px;height:88px;flex-shrink:0" data-hz="${esc(chars[0]||r[0])}"></div>
+     <div style="flex:1">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+       <span class="zh" style="font-size:26px;font-weight:900">${esc(r[0])}</span>
+       <span style="font-weight:700">${esc(r[1])}</span>
+       <span class="chip chip-nego">${esc(r[2])}</span></div>
+      <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc(r[4])}</div>
+      <div style="margin-top:8px;font-size:12px;color:var(--ink3)">Chữ mang bộ này trong kho từ:</div>
+      <div style="margin-top:4px">${chars.map(c=>`<button class="hz-mini" onclick="openChar('${c}')"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}</div>
+      ${words.length?`<div style="margin-top:8px;font-size:12.5px;color:var(--ink2)">Từ dùng: ${words.map(w=>`<span class="rel-chip" onclick="openVocab('${w.id}')">${esc(w.h)}</span>`).join('')}</div>`:''}
+     </div></div></div>`}).join('')}</div>`;
+}
+function mountRadicals(){document.querySelectorAll('#view-write .hz-box[data-hz]').forEach(b=>mountHZ(b,b.dataset.hz,'anim'));}
+
+function writeLookupHTML(el){
+ const f=el._lf||{q:'',ind:'all',lv:0};el._lf=f;
+ let cs=ALLCHARS;
+ if(f.ind!=='all'){const set=new Set();V.filter(w=>w.ind===f.ind&&(f.lv===0||w.lv===f.lv)).forEach(w=>[...w.h].forEach(c=>set.add(c)));cs=cs.filter(c=>set.has(c));}
+ else if(f.lv){const set=new Set();V.filter(w=>w.lv===f.lv).forEach(w=>[...w.h].forEach(c=>set.add(c)));cs=cs.filter(c=>set.has(c));}
+ if(f.q){const q=f.q.toLowerCase();cs=cs.filter(c=>c===f.q||((HV[c]||{}).p||'').toLowerCase().includes(q)||((HV[c]||{}).hv||'').toLowerCase().includes(q)||((HV[c]||{}).m||'').toLowerCase().includes(q));}
+ const shown=cs.slice(0,240);
+ return hwWarn()+
+ `<div class="vfilters">
+   <input class="vsearch" placeholder="Tìm chữ Hán / pinyin / âm Hán Việt / nghĩa…" value="${esc(f.q)}" oninput="WLQ(this.value)">
+   ${['all','core','mfg','office','trade','interp','nego'].map(i=>`<button class="vfilter ${f.ind===i?'active':''}" onclick="WLI('${i}')">${i==='all'?'Tất cả':META.inds[i].name}</button>`).join('')}
+   ${[0,1,2,3].map(l=>`<button class="vfilter ${f.lv===l?'active':''}" onclick="WLL(${l})">${l===0?'Mọi cấp':'L'+l}</button>`).join('')}
+  </div>
+  <div style="font-size:12.5px;color:var(--ink3);margin-bottom:10px" class="num">${cs.length} chữ${cs.length>240?' · hiển thị 240 chữ đầu, hãy dùng ô tìm kiếm':''}</div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">
+   ${shown.map(c=>{const i=HV[c]||{};const ok=S.write&&S.write.ok&&S.write.ok[c];
+    return `<div class="card hz-card" onclick="openChar('${c}')" title="${esc(i.m||'')}">
+     <div class="hz-char">${esc(c)}</div>
+     <div class="pinyin" style="font-size:11.5px">${esc(i.p||'')}</div>
+     <div class="hz-hv">${esc(i.hv||'—')}</div>
+     <div style="font-size:10.5px;color:var(--ink3);margin-top:2px">${ok?'<span style="color:var(--good)">✓ đã viết đúng</span>':(CHARFREQ[c]+' từ')}</div>
+    </div>`}).join('')||'<div class="empty">Không tìm thấy chữ phù hợp.</div>'}
+  </div>`;
+}
+function mountLookup(){}
+window.WLI=i=>{const el=$('#view-write');el._lf.ind=i;RENDER.write(el,'lookup')};
+window.WLL=l=>{const el=$('#view-write');el._lf.lv=l;RENDER.write(el,'lookup')};
+let _wlq;window.WLQ=v=>{clearTimeout(_wlq);_wlq=setTimeout(()=>{const el=$('#view-write');el._lf.q=v;RENDER.write(el,'lookup');const inp=el.querySelector('.vsearch');if(inp){inp.focus();inp.setSelectionRange(v.length,v.length);}},260)};
+
+/* ===== LUYỆN VIẾT ===== */
+function practiceSets(){
+ const saved=[...new Set(Object.keys(S.saved).flatMap(id=>[...(VMAP[id]||{h:''}).h]))].filter(c=>CHARFREQ[c]);
+ const byInd=ind=>{const set=new Set();V.filter(w=>w.ind===ind).forEach(w=>[...w.h].forEach(c=>set.add(c)));return ALLCHARS.filter(c=>set.has(c)).slice(0,24);};
+ return [
+  {id:'top20',name:'20 chữ thông dụng nhất',zh:'最常用20字',chars:ALLCHARS.slice(0,20)},
+  {id:'l1',name:'Chữ trong từ L1 Essential',zh:'基础字',chars:(()=>{const s=new Set();V.filter(w=>w.lv===1).forEach(w=>[...w.h].forEach(c=>s.add(c)));return ALLCHARS.filter(c=>s.has(c)).slice(0,24)})()},
+  {id:'saved',name:'Chữ trong My Vocabulary',zh:'我的生词',chars:saved.slice(0,24)},
+  {id:'mfg',name:'Chữ ngành Sản xuất',zh:'制造业',chars:byInd('mfg')},
+  {id:'trade',name:'Chữ ngành Xuất nhập khẩu',zh:'进出口',chars:byInd('trade')},
+  {id:'office',name:'Chữ Văn phòng',zh:'办公室',chars:byInd('office')}
+ ];
+}
+function writePracticeHTML(el){
+ const sets=practiceSets();
+ const cur=el._pset;
+ if(!cur){
+  return hwWarn()+
+  `<div class="card card-pad" style="border-left:4px solid var(--good);margin-bottom:18px">
+    <b>Luyện viết = tự vẽ từng nét, app chấm đúng/sai</b>
+    <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Dùng chuột (máy tính) hoặc ngón tay (điện thoại) viết theo đúng <b>thứ tự nét</b>. Sai 2 lần một nét sẽ có gợi ý. Chỉ khi viết xong <b>không sai nét nào</b> chữ mới được tính ✓ — đó cũng là điều kiện hoàn thành bước "Luyện viết" trong Lộ trình.</div></div>
+   <div class="grid g3">${sets.map(s=>{
+    const done=s.chars.filter(c=>S.write&&S.write.ok&&S.write.ok[c]).length;
+    return `<div class="card card-pad" style="cursor:${s.chars.length?'pointer':'default'};opacity:${s.chars.length?1:.5}" ${s.chars.length?`onclick="WPSET('${s.id}')"`:''}>
+     <b>${esc(s.name)}</b> <span class="zh" style="color:var(--ink2);font-size:13px">${esc(s.zh)}</span>
+     <div style="font-size:12.5px;color:var(--ink2);margin-top:6px" class="num">${s.chars.length} chữ · đã viết đúng ${done}</div>
+     <div class="bar" style="margin-top:8px"><i style="width:${s.chars.length?Math.round(done/s.chars.length*100):0}%"></i></div>
+     ${!s.chars.length?'<div style="font-size:12px;color:var(--ink3);margin-top:6px">Hãy lưu vài từ vào My Vocabulary trước</div>':''}
+    </div>`}).join('')}</div>`;
+ }
+ const set=sets.find(s=>s.id===cur.id);const ch=set.chars[cur.i];
+ return `<button class="btn btn-ghost btn-sm" onclick="WPBACK()">← Chọn bộ khác</button>
+  <div class="card card-pad" style="max-width:520px;margin:12px auto;text-align:center">
+   <div style="font-size:12px;color:var(--ink3)" class="num">${esc(set.name)} · chữ ${cur.i+1}/${set.chars.length}</div>
+   <div class="bar" style="margin:8px 0 14px"><i style="width:${cur.i/set.chars.length*100}%"></i></div>
+   <div style="display:flex;justify-content:center"><div class="hz-box" id="wpBox"></div></div>
+   <div style="margin-top:12px">
+    <span class="pinyin" style="font-size:15px">${esc((HV[ch]||{}).p||'')}</span>
+    <span class="chip chip-nego" style="margin-left:6px">${esc((HV[ch]||{}).hv||'')}</span>
+    <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc((HV[ch]||{}).m||'')}</div>
+   </div>
+   <div id="wpMsg" style="min-height:22px;margin-top:10px;font-size:13px;color:var(--ink3)">Viết chữ này theo đúng thứ tự nét</div>
+   <div class="hz-tools">
+    <button class="btn btn-sm" onclick="WPHINT()">💡 Xem nét mẫu</button>
+    <button class="btn btn-sm" onclick="WPRETRY()">↻ Viết lại</button>
+    <button class="btn btn-sm btn-primary" onclick="WPNEXT()">Chữ tiếp →</button>
+   </div>
+  </div>`;
+}
+function mountPractice(el){
+ const cur=el._pset;if(!cur)return;
+ const set=practiceSets().find(s=>s.id===cur.id);const ch=set.chars[cur.i];
+ const box=$('#wpBox');if(!box)return;
+ const msg=$('#wpMsg');
+ mountHZ(box,ch,'quiz',(ev,val)=>{
+  if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Sai nét ${val} lần${val>=2?' — đã bật gợi ý':''}</span>`;
+  if(ev==='done'){
+   S.write=S.write||{ok:{},tries:{}};S.write.tries[ch]=(S.write.tries[ch]||0)+1;
+   if(val===0){S.write.ok[ch]=true;addXP(3);msg.innerHTML='<span style="color:var(--good);font-weight:700">✓ Hoàn hảo, không sai nét nào!</span>';}
+   else msg.innerHTML=`<span style="color:var(--warn)">Xong nhưng sai ${val} nét — bấm ↻ viết lại để đạt ✓</span>`;
+   save();
+  }
+ });
+}
+window.WPSET=id=>{const el=$('#view-write');el._pset={id,i:0};RENDER.write(el,'practice')};
+window.WPBACK=()=>{const el=$('#view-write');el._pset=null;RENDER.write(el,'practice')};
+window.WPRETRY=()=>{const el=$('#view-write');mountPractice(el)};
+window.WPNEXT=()=>{const el=$('#view-write');const set=practiceSets().find(s=>s.id===el._pset.id);
+ if(el._pset.i+1>=set.chars.length){el._pset=null;toast('Hoàn thành bộ luyện viết! 🎉');RENDER.write(el,'practice');return;}
+ el._pset.i++;RENDER.write(el,'practice');};
+window.WPHINT=()=>{const el=$('#view-write');const set=practiceSets().find(s=>s.id===el._pset.id);const ch=set.chars[el._pset.i];
+ const box=$('#wpBox');mountHZ(box,ch,'anim');$('#wpMsg').innerHTML='Xem mẫu xong bấm <b>↻ Viết lại</b> để tự viết';};
+
+/* ================= TÍCH HỢP: nút "cách viết" trong thẻ từ ================= */
+const _openVocab0=window.openVocab;
+window.openVocab=id=>{
+ _openVocab0(id);
+ const w=VMAP[id];if(!w)return;
+ const chars=[...w.h].filter(c=>c>='一'&&c<='鿿');
+ if(!chars.length)return;
+ const box=$('#modalBox');
+ box.insertAdjacentHTML('beforeend',
+  `<div class="mrow"><b>Cách viết</b><div>
+   <div style="font-size:12.5px;color:var(--ink2);margin-bottom:6px">Bấm từng chữ để xem thứ tự nét, số nét và tự viết thử:</div>
+   ${chars.map(c=>`<button class="hz-mini" onclick="openChar('${c}')"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}
+   <div style="font-size:12.5px;color:var(--ink2);margin-top:8px">Âm Hán Việt cả từ: <b style="color:var(--accent-ink);letter-spacing:.03em">${chars.map(c=>(HV[c]||{}).hv||'?').join(' ')}</b></div>
+  </div></div>`);
+};
+
+/* ================= TÍCH HỢP LỘ TRÌNH ================= */
+QUIZMAP.s1f={type:'stroke'};
+QUIZMAP.s2f={type:'radical'};
+EXTDONE.write=n=>Object.keys((S.write&&S.write.ok)||{}).length>=+n;
+EXTQUIZ.stroke=(mk,sh)=>sh(WQUIZ_STROKE).slice(0,10).map(q=>{const opts=sh(q[1].map((t,i)=>({t,ok:i===q[2]})));return {prompt:q[0],sub:'',opts:opts.map(o=>o.t),a:opts.findIndex(o=>o.ok),plain:true};});
+EXTQUIZ.radical=(mk,sh)=>{
+ const pool=RADICALS.map(r=>r[3]);
+ const qs=sh(RADICALS).slice(0,6).map(r=>{const q=mk(r[0]+'  ( '+r[1]+' )','Bộ thủ này gợi ý nghĩa gì?',r[3],pool);q.plain=true;return q;});
+ const hvPool=ALLCHARS.slice(0,120).map(c=>(HV[c]||{}).hv).filter(Boolean);
+ const hvq=sh(ALLCHARS.slice(0,80)).slice(0,4).map(c=>{const q=mk(c,'Âm Hán Việt của chữ này là gì?',(HV[c]||{}).hv,hvPool);return q;});
+ return qs.concat(hvq);
+};
+EXTOUT.stroke=()=>['Gọi tên và viết đúng 8 nét cơ bản (ngang, sổ, phẩy, mác, chấm, hất, gập, móc)','Áp dụng 7 quy tắc bút thuận cho mọi chữ mới gặp','Vượt bài kiểm tra 10 câu về nét & bút thuận (100%)'];
+EXTOUT.radical=()=>['Nhận ra 24 bộ thủ hay gặp nhất trong tiếng Trung công sở','Đoán được nghĩa của chữ lạ nhờ bộ thủ (thấy 贝 → tiền bạc, thấy 扌 → động tác tay)','Dùng âm Hán Việt làm cầu nối để nhớ chữ','Vượt bài kiểm tra bộ thủ + Hán Việt (100%)'];
+EXTCONTENT.stroke=()=>{setTimeout(mountBasics,0);return writeBasicsHTML();};
+EXTCONTENT.radical=()=>{setTimeout(mountRadicals,0);return writeRadicalHTML();};
+ROADMAP2[0].steps.push({k:'s1f',t:'Nét cơ bản & 7 quy tắc bút thuận',d:'8 nét gốc của mọi chữ Hán + 7 quy tắc thứ tự viết, có video từng nét. Đây là nền để viết được BẤT KỲ chữ nào.',go:['write','basics'],tag:'Học'});
+ROADMAP2[1].steps.push({k:'s2f',t:'Bộ thủ & âm Hán Việt — cách nhớ chữ của người Việt',d:'24 bộ thủ hay gặp nhất + cách dùng âm Hán Việt làm cầu nối. Học xong bạn đoán được nghĩa chữ chưa từng gặp.',go:['write','radical'],tag:'Học'});
+ROADMAP2[2].steps.push({k:'s3g',t:'Luyện viết tay 15 chữ Hán',d:'Tự viết từng nét bằng chuột/ngón tay, app chấm đúng sai. Cần 15 chữ viết đúng hoàn toàn (không sai nét nào).',go:['write','practice'],auto:'write:15',tag:'Luyện'});
+ROADMAP2[4].steps.push({k:'s5f',t:'Luyện viết tay đủ 30 chữ Hán',d:'Nâng tổng số chữ tự viết đúng lên 30 — đủ vốn để ghi chép tay cơ bản tại nơi làm việc.',go:['write','practice'],auto:'write:30',tag:'Luyện'});
+
+/* trợ giúp */
+HELP.splice(3,0,
+ {v:'write',q:'Học viết chữ Hán trong app thế nào?',a:'Mục <b>Viết chữ Hán</b> có 4 phần: <b>Nét & quy tắc</b> (8 nét cơ bản + 7 quy tắc bút thuận, có video từng nét) → <b>Bộ thủ</b> (24 bộ hay gặp, giúp đoán nghĩa chữ lạ) → <b>Tra chữ</b> (tra bất kỳ chữ nào trong kho: nét viết, số nét, âm Hán Việt, từ chứa chữ đó) → <b>Luyện viết</b> (tự vẽ từng nét, app chấm đúng/sai). Trong thẻ từ vựng cũng có mục "Cách viết" — bấm từng chữ là xem được ngay.',go:['write']},
+ {q:'Âm Hán Việt dùng để làm gì?',a:'Đây là lợi thế riêng của người Việt. 交货期 đọc Hán Việt là <b>GIAO HÓA KỲ</b> — nghe là đoán ra "kỳ hạn giao hàng" ngay, không cần học vẹt. App hiện âm Hán Việt cho tất cả 851 chữ trong kho từ; gặp chữ mới hãy đọc thầm âm Hán Việt trước khi tra nghĩa.'},
+ {q:'Ô tập viết không hiện / không vẽ được?',a:'Phần nét viết dùng thư viện tải từ internet nên cần có mạng. Nếu mất mạng, app vẫn hiện quy tắc bút thuận, bộ thủ, âm Hán Việt và chữ mẫu cỡ lớn. Trên điện thoại hãy viết bằng <b>ngón tay</b> trực tiếp lên ô vuông; trên máy tính giữ chuột trái và kéo theo nét.'}
+);
+/* onboarding: thêm màn giới thiệu viết chữ */
+OB.splice(3,0,{h:'书',t:'Và cả cách VIẾT từng chữ',b:'Mục <b>Viết chữ Hán</b> dạy 8 nét cơ bản, 7 quy tắc bút thuận, 24 bộ thủ, và cho bạn <b>tự viết từng nét bằng ngón tay</b> — app chấm đúng sai. Mỗi chữ đều có <b>âm Hán Việt</b>: lợi thế riêng của người Việt để nhớ chữ nhanh gấp nhiều lần.'});
+
 /* ================= INIT ================= */
+S.write=S.write||{ok:{},tries:{}};
 S.visits++;save();
 $('#xpFoot').textContent=S.xp+' XP';
 buildHelp();
+const _theme0=$('#themeBtn').onclick;
+$('#themeBtn').onclick=()=>{_theme0();if(currentView==='write')RENDER.write($('#view-write'));};
 show('dashboard');
 if(!S.onboarded)setTimeout(showOnboarding,600);
 </script>
