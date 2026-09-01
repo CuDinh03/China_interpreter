@@ -5392,7 +5392,1067 @@ const WQUIZ_STROKE=[
 ];
 </script>
 <script>
-/* ================= HANZI WRITER LOADER (có dự phòng) ================= */
+/* =====================================================================
+   CHARACTER LEARNING ENGINE — tầng dữ liệu
+   Thiết kế để MỞ RỘNG: COMPONENTS và DECOMP đều là bảng phẳng,
+   thêm dòng mới là dùng được ngay, không phải sửa code.
+   ===================================================================== */
+
+/* --- 1. THÀNH PHẦN CẤU TẠO ---------------------------------------
+   role: 'radical'  = bộ thủ gợi NGHĨA (ưu tiên hiển thị)
+         'component'= thành phần cấu tạo (có thể gợi âm hoặc chỉ là hình)
+   Bảng hiện có 44 mục "core"; thêm mục mới chỉ cần push vào mảng.      */
+const COMPONENTS=[
+ {g:'亻',n:'单人旁',hv:'NHÂN',m:'người',role:'radical',note:'Liên quan đến CON NGƯỜI hoặc hành vi của người.',chars:'你 他 们 件 位 供 保 促 但 住 借 traditional'},
+ {g:'讠',n:'言字旁',hv:'NGÔN',m:'lời nói',role:'radical',note:'Liên quan đến NÓI NĂNG, ngôn ngữ, giao tiếp — nhóm quan trọng nhất với phiên dịch.',chars:'请 说 话 谈 议 语 译 认 订 记 谢 询 证 诉 论 讨 词 训 访 评'},
+ {g:'氵',n:'三点水',hv:'THỦY',m:'nước',role:'radical',note:'Liên quan đến NƯỚC, chất lòng, dòng chảy.',chars:'港 海 清 消 漏 温 满 洗 添 汇 没 流 池 油 潮 漆 污 渍 淡'},
+ {g:'扌',n:'提手旁',hv:'THỦ',m:'tay',role:'radical',note:'Liên quan đến ĐỘNG TÁC TAY — nhóm động từ thao tác trong nhà xưởng.',chars:'打 提 接 报 换 找 拉 推 抽 拍 挑 摆 撕 擦 插 扳 抓 搬 拿 排 招 抱 持 指 措'},
+ {g:'木',n:'木字旁',hv:'MỘC',m:'gỗ, cây',role:'radical',note:'Liên quan đến GỖ, cây cối, đồ làm bằng gỗ.',chars:'材 检 样 机 板 楼 桌 模 标 柜 概 梯 棉 橡 析'},
+ {g:'钅',n:'金字旁',hv:'KIM',m:'kim loại',role:'radical',note:'Liên quan đến KIM LOẠI — rất hay gặp trong nhà máy cơ khí.',chars:'钢 铝 铜 铁 锈 镀 钥 钱 销 锁 针 铺'},
+ {g:'车',n:'车字旁',hv:'XA',m:'xe',role:'radical',note:'Liên quan đến XE CỘ, vận chuyển, bánh xe.',chars:'轮 转 输 较 软 载 辆'},
+ {g:'贝',n:'贝字旁',hv:'BỐI',m:'vỏ sò = tiền',role:'radical',note:'Người xưa dùng vỏ sò làm tiền → chữ có 贝 hầu hết liên quan đến TIỀN BẠC, mua bán, tài sản.',chars:'货 贵 费 账 赔 购 贸 赢 责 质 资 贴 赶 败 贷'},
+ {g:'辶',n:'走之底',hv:'SƯỚC',m:'đi, di chuyển',role:'radical',note:'Liên quan đến ĐI LẠI, vận chuyển, tiến trình.',chars:'进 运 送 迟 返 通 达 逐 迎 避 递 追 边 这 过 退 遇'},
+ {g:'纟',n:'绞丝旁',hv:'MỊCH',m:'sợi tơ',role:'radical',note:'Liên quan đến SỢI, dây, vải vóc, liên kết.',chars:'线 纸 组 细 纪 结 给 绍 练 缠 绣 绿 红 续 经 络 统 缝'},
+ {g:'宀',n:'宝盖头',hv:'MIÊN',m:'mái nhà',role:'radical',note:'Liên quan đến NHÀ CỬA, không gian trong nhà.',chars:'客 家 安 定 完 室 宿 密 实 审 寄 容 害'},
+ {g:'口',n:'口字旁',hv:'KHẨU',m:'miệng',role:'radical',note:'Liên quan đến MIỆNG: ăn, nói, kêu — và cả cửa/lỗ.',chars:'吃 叫 吗 吧 呼 品 号 员 售 咖 啡 听 味 唛 哪 告'},
+ {g:'日',n:'日字旁',hv:'NHẬT',m:'mặt trời, ngày',role:'radical',note:'Liên quan đến MẶT TRỜI, thời gian, ngày tháng.',chars:'时 明 早 晚 是 暂 旺 昨 晒 暖'},
+ {g:'忄',n:'竖心旁',hv:'TÂM',m:'trái tim',role:'radical',note:'Liên quan đến TÂM TRẠNG, cảm xúc, suy nghĩ.',chars:'快 慢 忙 情 怪 惯 懂 惠 恼'},
+ {g:'刂',n:'立刀旁',hv:'ĐAO',m:'dao',role:'radical',note:'Liên quan đến CẮT, chặt, phân chia.',chars:'到 制 剪 划 判 利 刷 别 刚 削'},
+ {g:'土',n:'提土旁',hv:'THỔ',m:'đất',role:'radical',note:'Liên quan đến ĐẤT ĐAI, nơi chốn, xây dựng.',chars:'地 场 坏 增 培 塑 堆 均 型 城 base'},
+ {g:'石',n:'石字旁',hv:'THẠCH',m:'đá',role:'radical',note:'Liên quan đến ĐÁ, vật cứng, khoáng vật.',chars:'确 碎 破 硬 碑 砍 础 磨'},
+ {g:'页',n:'页字旁',hv:'HIỆT',m:'đầu, trang',role:'radical',note:'Nguyên nghĩa là ĐẦU — chữ có 页 thường liên quan đến đầu/mặt, hoặc trang giấy.',chars:'顺 顶 颜 频 题 预 领 额 颈 顾'},
+ {g:'阝',n:'左耳旁',hv:'PHỤ',m:'gò đất',role:'radical',note:'Đứng bên TRÁI nghĩa là gò/đồi, nơi chốn; đứng bên PHẢI nghĩa là làng ấp.',chars:'防 阿 隔 陈 险 除 陷 附 队 院 阶'},
+ {g:'广',n:'广字头',hv:'NGHIỄM',m:'mái che',role:'radical',note:'Liên quan đến NHÀ XƯỞNG, công trình có mái.',chars:'库 广 座 应 度 废 床 店 庆'},
+ {g:'灬',n:'四点底',hv:'HỎA',m:'lửa',role:'radical',note:'Dạng nằm dưới của 火 — liên quan đến LỬA, nhiệt, nấu.',chars:'点 热 照 熟 煮'},
+ {g:'火',n:'火字旁',hv:'HỎA',m:'lửa',role:'radical',note:'Liên quan đến LỬA, đốt, nhiệt.',chars:'灯 烫 烦 灰 烧'},
+ {g:'舟',n:'舟字旁',hv:'CHU',m:'thuyền',role:'radical',note:'Liên quan đến TÀU THUYỀN, vận tải biển.',chars:'船 舱 航 般'},
+ {g:'米',n:'米字旁',hv:'MỄ',m:'gạo',role:'radical',note:'Liên quan đến GẠO, hạt, lương thực.',chars:'米 类 粉 精 料'},
+ {g:'攵',n:'反文旁',hv:'PHỘC',m:'đánh, gõ',role:'radical',note:'Nghĩa gốc là cầm gậy đánh → mang nghĩa TÁC ĐỘNG, thay đổi.',chars:'收 改 教 效 数 故 敬 政 救'},
+ {g:'艹',n:'草字头',hv:'THẢO',m:'cỏ, cây nhỏ',role:'radical',note:'Liên quan đến CỎ CÂY, thực vật.',chars:'花 苦 菜 薄 荷 蓝 药 茶 范'},
+ {g:'亠',n:'点横头',hv:'ĐẦU',m:'nắp, phần đầu',role:'component',note:'Thành phần hình dạng ở đỉnh chữ, ít gợi nghĩa.',chars:'交 market 产 高 京'},
+ {g:'纟',n:'绞丝旁',hv:'MỊCH',m:'sợi',role:'radical',note:'(xem ở trên)',chars:''},
+ {g:'心',n:'心字底',hv:'TÂM',m:'lòng, tim',role:'radical',note:'Dạng đầy đủ nằm dưới chữ — cảm xúc, suy nghĩ.',chars:'意 想 志 您 急 思 息 悉'},
+ {g:'手',n:'手',hv:'THỦ',m:'tay',role:'radical',note:'Dạng đầy đủ của 扌.',chars:'手 拿 掌'},
+ {g:'力',n:'力',hv:'LỰC',m:'sức lực',role:'radical',note:'Liên quan đến SỨC LỰC, gắng sức.',chars:'加 动 努 劳 助 势'},
+ {g:'又',n:'又',hv:'HỰU',m:'bàn tay phải',role:'component',note:'Hình bàn tay — thường mang nghĩa cầm nắm, lặp lại.',chars:'难 观 报 双 取 受'},
+ {g:'王',n:'王字旁',hv:'VƯƠNG/NGỌC',m:'ngọc',role:'radical',note:'Thực chất là bộ NGỌC 玉 — liên quan đến ngọc, đồ quý.',chars:'班 现 理 玻 璃 环'},
+ {g:'目',n:'目字旁',hv:'MỤC',m:'mắt',role:'radical',note:'Liên quan đến MẮT, nhìn, quan sát.',chars:'看 相 省 直 目 睛'},
+ {g:'疒',n:'病字旁',hv:'NẠCH',m:'bệnh',role:'radical',note:'Liên quan đến BỆNH TẬT.',chars:'病 痕 疼 疲'},
+ {g:'糸',n:'糸',hv:'MỊCH',m:'tơ',role:'radical',note:'Dạng phồn thể của 纟.',chars:'素 紧 累'},
+ {g:'囗',n:'国字框',hv:'VI',m:'vòng vây',role:'radical',note:'Khung bao kín — liên quan đến phạm vi, bao quanh.',chars:'国 回 团 围 图 因 园'},
+ {g:'门',n:'门字框',hv:'MÔN',m:'cửa',role:'radical',note:'Liên quan đến CỬA, lối ra vào.',chars:'问 间 门 闭 闻'},
+ {g:'饣',n:'食字旁',hv:'THỰC',m:'ăn',role:'radical',note:'Liên quan đến ĂN UỐNG, thức ăn.',chars:'饭 馈 饱 饿'},
+ {g:'讠',n:'言',hv:'NGÔN',m:'lời',role:'radical',note:'(xem ở trên)',chars:''},
+ {g:'礻',n:'示字旁',hv:'THỊ',m:'thờ cúng',role:'radical',note:'Liên quan đến LỄ NGHI, thần linh, phúc lộc.',chars:'礼 祝 福 视'},
+ {g:'衤',n:'衣字旁',hv:'Y',m:'áo quần',role:'radical',note:'Liên quan đến QUẦN ÁO, vải vóc.',chars:'补 被 裤 装'},
+ {g:'雨',n:'雨字头',hv:'VŨ',m:'mưa',role:'radical',note:'Liên quan đến THỜI TIẾT, mưa gió.',chars:'需 零 雪 electric'},
+ {g:'穴',n:'穴宝盖',hv:'HUYỆT',m:'hang, lỗ',role:'radical',note:'Liên quan đến HANG HỐC, khoảng trống.',chars:'空 突 究 窗'},
+ {g:'卩',n:'单耳旁',hv:'TIẾT',m:'dấu ấn, quỳ',role:'component',note:'Hình người quỳ / thẻ tín — thường ở bên phải chữ.',chars:'报 印 却 即'},
+ {g:'化',n:'化',hv:'HÓA',m:'biến đổi',role:'component',note:'Vừa gợi ÂM (huà → huò) vừa gợi nghĩa "biến đổi, trao đổi".',chars:'货 花'},
+ {g:'青',n:'青',hv:'THANH',m:'xanh, trong',role:'component',note:'Gợi ÂM qīng/qíng — có mặt trong nhiều chữ đọc gần giống.',chars:'请 清 情 精'},
+ {g:'各',n:'各',hv:'CÁC',m:'mỗi',role:'component',note:'Gợi ÂM gè/kè/gé.',chars:'客 格 各 路'},
+ {g:'方',n:'方字旁',hv:'PHƯƠNG',m:'vuông, hướng',role:'component',note:'Gợi ÂM fāng/fáng.',chars:'方 防 访 放 房'},
+ {g:'寺',n:'寺',hv:'TỰ',m:'chùa, nha môn',role:'component',note:'Gợi ÂM shí/chí/dài.',chars:'时 持 待 等 特'}
+];
+
+/* --- 2. CẤU TẠO CHỮ (mở rộng dần) --------------------------------
+   Bảng này giải thích chữ ghép từ những phần nào. Chưa có trong bảng
+   thì hệ thống tự suy ra thành phần từ COMPONENTS ở trên.            */
+const DECOMP_RAW=`货|化+贝|化 gợi âm huò · 贝 = tiền → thứ đem trao đổi lấy tiền
+价|亻+介|亻 người · 介 gợi âm jià → cái người ta định ra để trao đổi
+到|至+刂|至 = tới nơi · 刂 gợi âm dāo→dào
+们|亻+门|亻 người · 门 gợi âm mén
+件|亻+牛|người + trâu bò → đơn vị đếm vật
+的|白+勺|chữ mượn âm, nay là trợ từ sở hữu
+您|你+心|你 + 心 (trái tim) → gọi "bạn" bằng cả tấm lòng = kính ngữ
+理|王+里|王 (=ngọc) · 里 gợi âm lǐ → mài ngọc theo thớ = xử lý, quản lý
+报|扌+卩+又|tay + dấu ấn → truyền tin, báo cáo
+会|人+云|người tụ lại nói chuyện = họp
+这|辶+文|辶 = đi lại · 文 gợi âm
+请|讠+青|讠 lời nói · 青 gợi âm qīng
+译|讠+圣|讠 lời nói → chuyển lời sang tiếng khác
+客|宀+各|宀 mái nhà · 各 gợi âm kè → người đến nhà = khách
+议|讠+义|讠 lời nói · 义 = nghĩa lý → bàn bạc
+检|木+佥|木 gỗ · 佥 gợi âm → xem xét kỹ
+格|木+各|木 gỗ · 各 gợi âm gé → khung gỗ, khuôn phép
+时|日+寸|日 mặt trời · 寸 tấc → đo thời gian bằng bóng nắng
+经|纟+圣|纟 sợi tơ → sợi dọc khung cửi = mạch chính, trải qua, quản lý
+没|氵+殳|氵 nước → chìm trong nước = không còn
+样|木+羊|木 gỗ · 羊 gợi âm yáng → mẫu gỗ
+机|木+几|木 gỗ · 几 gợi âm jī → bộ máy bằng gỗ
+保|亻+呆|người ôm giữ = bảo vệ
+谈|讠+炎|讠 lời nói · 炎 gợi âm yán → nói chuyện
+判|半+刂|半 nửa · 刂 dao → chia đôi mà xét = phán xử
+问|门+口|口 (miệng) ở trong 门 (cửa) → đến cửa mà hỏi
+品|口+口+口|ba cái miệng nếm thử = phẩm chất, hàng hóa
+质|厂+十+贝|có 贝 (tiền) → giá trị thực của vật
+运|辶+云|辶 đi lại · 云 gợi âm yún → chuyển đi
+接|扌+妾|扌 tay → đưa tay đón lấy
+费|弗+贝|贝 tiền · 弗 gợi âm fèi → tiền tiêu ra
+要|覀+女|chữ tượng hình, nay nghĩa "cần, muốn"
+同|冂+一+口|khung bao + 口 → cùng nằm chung một chỗ
+意|音+心|âm thanh trong lòng = ý nghĩ
+订|讠+丁|讠 lời nói · 丁 gợi âm dīng → giao ước bằng lời
+批|扌+比|扌 tay · 比 gợi âm bǐ → tay xét duyệt, chia lô
+明|日+月|mặt trời + mặt trăng = sáng
+进|辶+井|辶 đi lại · 井 gợi âm jǐn→jìn
+间|门+日|ánh nắng lọt qua khe cửa = khoảng, gian
+假|亻+叚|亻 người · 叚 gợi âm jiǎ
+作|亻+乍|亻 người · 乍 gợi âm zuò → người làm
+度|广+廿+又|广 mái che → thước đo, mức độ
+装|壮+衣|衣 áo quần · 壮 gợi âm zhuàng → mặc vào, đóng gói
+提|扌+是|扌 tay · 是 gợi âm shì→tí → nhấc lên, nêu ra
+款|士+示+欠|khoản mục ghi chép, khoản tiền
+吧|口+巴|口 miệng · 巴 gợi âm bā → trợ từ ngữ khí
+可|丁+口|có thể, được
+加|力+口|thêm sức vào = thêm vào
+题|是+页|页 = đầu/trang → đầu đề
+汇|氵+匚|氵 nước → nước tụ về một chỗ = tập hợp, chuyển tiền
+打|扌+丁|扌 tay · 丁 gợi âm dīng→dǎ
+原|厂+白+小|dưới vách núi có suối = nguồn, gốc
+线|纟+戋|纟 sợi · 戋 gợi âm jiān→xiàn
+验|马+佥|kiểm chứng (bản gốc liên quan ngựa)
+急|刍+心|心 (lòng) nóng vội = gấp
+供|亻+共|亻 người · 共 gợi âm gòng → đưa cho, cung cấp
+记|讠+己|讠 lời nói · 己 gợi âm jǐ → ghi lời lại
+总|丷+口+心|gom về một mối = tổng
+备|夂+田|chuẩn bị sẵn
+调|讠+周|讠 lời nói · 周 gợi âm zhōu → điều hòa, điều động
+数|娄+攵|攵 = tác động → đếm
+签|竹+佥|竹 tre → thẻ tre ghi tên = ký
+给|纟+合|纟 sợi · 合 gợi âm hé→gěi
+证|讠+正|讠 lời nói · 正 = đúng → lời chứng thực
+号|口+丂|口 miệng kêu → hiệu lệnh, số hiệu
+家|宀+豕|dưới mái nhà có con lợn = nhà
+空|穴+工|穴 hang lỗ · 工 gợi âm gōng → trống rỗng
+对|又+寸|hai tay đối nhau = đối đáp, đúng
+职|耳+只|耳 tai (nghe lệnh) → chức phận
+办|力+丶丶|dùng sức mà làm = xử lý
+管|竹+官|竹 tre → ống tre; nghĩa mở rộng: cai quản
+板|木+反|木 gỗ · 反 gợi âm fǎn→bǎn
+安|宀+女|người phụ nữ yên ổn trong nhà = an
+认|讠+人|讠 lời nói → nhận biết bằng lời
+通|辶+甬|辶 đi lại · 甬 gợi âm yǒng→tōng
+补|衤+卜|衤 áo quần → vá áo = bù đắp
+实|宀+头|trong nhà đầy = thực, chắc
+完|宀+元|hoàn tất việc trong nhà
+延|廴+正|kéo dài ra
+查|木+旦|tra xét
+标|木+示|木 gỗ → cây nêu làm mốc = tiêu chuẩn
+告|牛+口|dâng lời = báo cho biết
+故|古+攵|古 gợi âm gǔ→gù → duyên cớ, sự cố
+停|亻+亭|亻 người · 亭 = cái đình → dừng nghỉ
+物|牛+勿|牛 trâu bò (tài sản) → đồ vật
+清|氵+青|氵 nước · 青 gợi âm qīng → nước trong
+降|阝+夅|阝 gò đất → từ trên xuống
+条|夂+木|木 gỗ → cành nhỏ, sợi dài
+箱|竹+相|竹 tre → hòm tre
+账|贝+长|贝 tiền → sổ ghi tiền
+协|十+办|hợp sức cùng làm
+预|予+页|页 đầu → tính trước
+误|讠+吴|讠 lời nói → nói sai, lỡ
+制|牛+巾+刂|dùng dao cắt may = chế tạo
+业|丨+业|nghề nghiệp
+部|咅+阝|阝 làng ấp → khu vực, bộ phận
+达|辶+大|辶 đi lại → đi tới nơi
+计|讠+十|讠 lời nói + 十 số → tính toán
+迟|辶+尺|辶 đi lại → đi chậm
+流|氵+㐬|氵 nước → dòng chảy
+良|丶+艮|tốt lành
+因|囗+大|nguyên do
+障|阝+章|阝 gò đất → vật chắn
+具|目+八|đồ dùng
+试|讠+式|讠 lời nói · 式 = cách thức → thử theo cách
+程|禾+呈|禾 lúa → mức, quy trình
+率|玄+丶|tỷ lệ
+险|阝+佥|阝 gò đất → chỗ hiểm
+邮|由+阝|阝 làng ấp → trạm chuyển thư
+回|囗+口|vòng quay trở lại
+跟|足+艮|足 chân → theo gót
+话|讠+舌|讠 lời nói + 舌 lưỡi → lời nói
+信|亻+言|người đứng sau lời nói = chữ tín, thư
+起|走+己|走 chạy → đứng dậy, bắt đầu
+海|氵+每|氵 nước → biển lớn
+诉|讠+斥|讠 lời nói → kể, kiện
+底|广+氐|广 mái che → phần đáy
+算|竹+目+廾|竹 tre (thẻ tính) → tính toán
+晚|日+免|日 mặt trời · 免 gợi âm miǎn→wǎn → muộn
+说|讠+兑|讠 lời nói · 兑 gợi âm → nói
+看|手+目|đưa tay che mắt mà nhìn
+现|王+见|王 (ngọc) + 见 (thấy) → hiện ra
+最|曰+取|nhất, hơn cả
+果|田+木|quả trên cây
+送|辶+关|辶 đi lại → đưa đi
+收|丩+攵|攵 tác động → thu về
+码|石+马|石 đá · 马 gợi âm mǎ → con số, mã
+放|方+攵|方 gợi âm fāng · 攵 tác động → thả ra
+室|宀+至|dưới mái nhà = phòng
+责|龶+贝|贝 tiền → đòi nợ = trách nhiệm
+排|扌+非|扌 tay → xếp thành hàng
+烦|火+页|lửa trong đầu = phiền muộn
+确|石+角|石 đá → chắc chắn
+快|忄+夬|忄 lòng · 夬 gợi âm → nhanh, vui
+系|丿+糸|糸 sợi → buộc, hệ thống
+复|复|lặp lại, khôi phục
+语|讠+吾|讠 lời nói + 吾 (ta) → ngôn ngữ
+缺|缶+夬|缶 đồ sành → sứt mẻ, thiếu
+员|口+贝|贝 tiền → người trong tổ chức
+材|木+才|木 gỗ · 才 gợi âm cái→cái → vật liệu
+位|亻+立|người đứng ở chỗ nào = vị trí
+消|氵+肖|氵 nước → tan đi
+休|亻+木|người tựa gốc cây = nghỉ
+便|亻+更|người thấy tiện lợi
+案|安+木|木 gỗ → cái bàn; hồ sơ đặt trên bàn
+知|矢+口|nói ra nhanh như tên = biết
+催|亻+崔|亻 người · 崔 gợi âm cuī → thúc giục
+压|厂+土|đất đè xuống = ép
+购|贝+勾|贝 tiền → dùng tiền lấy về
+涨|氵+张|氵 nước → nước dâng, tăng
+改|己+攵|攵 tác động → sửa đổi
+投|扌+殳|扌 tay → ném, đầu tư
+赔|贝+咅|贝 tiền → trả tiền đền
+偿|亻+尝|người trả lại = đền bù
+损|扌+员|扌 tay → làm hao đi
+让|讠+上|讠 lời nói → nhường lời
+处|夂+卜|xử lý, nơi chốn
+国|囗+玉|ngọc quý trong bờ cõi = nước
+超|走+召|走 chạy → vượt qua
+影|景+彡|彡 = tia sáng/nét → bóng, ảnh
+低|亻+氐|亻 người · 氐 gợi âm dī
+代|亻+弋|亻 người → thay thế
+续|纟+卖|纟 sợi → nối tiếp
+免|免|tránh khỏi, miễn
+季|禾+子|禾 lúa → mùa vụ
+负|⺈+贝|贝 tiền → gánh nợ = chịu trách nhiệm
+解|角+刀+牛|dùng dao tách sừng trâu = giải quyết
+情|忄+青|忄 lòng · 青 gợi âm qíng → tình cảm
+况|冫+兄|tình hình
+资|次+贝|贝 tiền → của cải
+转|车+专|车 xe → xoay chuyển
+慢|忄+曼|忄 lòng · 曼 gợi âm màn → chậm
+结|纟+吉|纟 sợi → thắt nút, kết
+配|酉+己|ghép đôi, phối hợp
+包|勹+巳|bọc lại
+准|冫+隹|chuẩn xác
+返|辶+反|辶 đi lại + 反 (ngược) → quay lại
+抽|扌+由|扌 tay → rút ra
+设|讠+殳|讠 lời nói → bày đặt, thiết lập
+器|㗊+犬|đồ dùng
+修|亻+攸+彡|sửa sang
+模|木+莫|木 gỗ · 莫 gợi âm mò→mó → khuôn mẫu
+师|丿+帅|thầy, sư
+库|广+车|广 mái che + 车 xe → nhà để xe = kho
+领|令+页|页 đầu → cổ áo, dẫn dắt
+紧|以+糸|糸 sợi → siết chặt
+整|敕+正|chỉnh tề
+岗|山+冈|山 núi → gò cao = vị trí gác
+防|阝+方|阝 gò đất · 方 gợi âm fāng → đắp đê phòng
+规|夫+见|khuôn phép
+帮|邦+巾|giúp đỡ
+印|卬+卩|dấu ấn
+见|见|nhìn thấy
+推|扌+隹|扌 tay → đẩy
+写|冖+与|ghi chép
+截|土+隹+戈|cắt ngang
+优|亻+尤|亻 người · 尤 gợi âm yóu → hơn người
+考|耂+丂|khảo xét
+市|亠+巾|chợ, thành phố
+利|禾+刂|dùng dao gặt lúa = lợi ích
+折|扌+斤|扌 tay + 斤 rìu → bẻ gãy, chiết khấu
+扣|扌+口|扌 tay → gài, trừ đi
+取|耳+又|tay cầm tai = lấy
+违|辶+韦|辶 đi lại → đi trái đường
+约|纟+勺|纟 sợi → ràng buộc, hẹn ước
+税|禾+兑|禾 lúa → nộp lúa cho quan = thuế
+付|亻+寸|đưa tay giao cho = trả
+失|失|mất
+售|亻+口|bán ra
+访|讠+方|讠 lời nói · 方 gợi âm fǎng → thăm hỏi
+相|木+目|mắt nhìn cây = xem xét, lẫn nhau
+过|辶+寸|辶 đi lại → đi qua
+响|口+向|口 miệng → vang tiếng
+想|相+心|心 lòng → suy nghĩ
+法|氵+去|氵 nước chảy đều = phép tắc
+观|又+见|xem xét
+陈|阝+东|阝 làng ấp → bày ra; họ Trần
+楚|林+疋|rõ ràng (清楚)
+把|扌+巴|扌 tay → cầm nắm
+答|竹+合|竹 tre → thẻ trả lời
+退|辶+艮|辶 đi lại → lui lại
+道|辶+首|辶 đi lại + 首 đầu → con đường
+歉|兼+欠|欠 = thiếu → lời xin lỗi
+船|舟+㕣|舟 thuyền → tàu
+销|钅+肖|钅 kim loại → nung chảy, bán ra
+担|扌+旦|扌 tay → gánh vác
+建|廴+聿|dựng lên
+常|尚+巾|thường xuyên
+练|纟+east|纟 sợi → luyện tơ = rèn luyện
+路|足+各|足 chân → đường đi
+贴|贝+占|贝 tiền → dán, phụ cấp
+胶|月+交|月 (nhục) · 交 gợi âm jiāo → keo
+基|其+土|土 đất → nền móng
+造|辶+告|辶 đi lại → làm ra
+介|人+丿丨|ở giữa
+绍|纟+召|纟 sợi → nối lại, giới thiệu
+决|冫+夬|quyết định
+名|夕+口|đêm tối gọi tên = tên
+专|专|chuyên
+技|扌+支|扌 tay + 支 (nhánh) → kỹ năng tay nghề
+图|囗+冬|囗 khung → bản vẽ trong khung
+纸|纟+氏|纟 sợi → giấy làm từ sợi
+效|交+攵|攵 tác động → hiệu quả
+训|讠+川|讠 lời nói → dạy bảo
+注|氵+主|氵 nước → rót, chú ý
+招|扌+召|扌 tay → vẫy gọi, tuyển
+忙|忄+亡|忄 lòng rối = bận
+录|录|ghi chép
+任|亻+壬|亻 người → gánh nhiệm vụ
+务|夂+力|dùng sức làm việc
+微|彳+散|nhỏ bé
+稍|禾+肖|禾 lúa → chút ít
+等|竹+寺|竹 tre → thẻ xếp hạng, chờ
+留|卯+田|田 ruộng → giữ lại
+询|讠+旬|讠 lời nói · 旬 gợi âm xún → hỏi
+离|离|rời xa
+岸|山+厂+干|山 núi → bờ
+集|隹+木|chim đậu trên cây = tụ tập
+票|覀+示|tấm phiếu
+踪|足+宗|足 chân → dấu chân
+地|土+也|土 đất · 也 gợi âm yě→dì
+尾|尸+毛|đuôi
+虑|虍+心|心 lòng → lo nghĩ
+诚|讠+成|讠 lời nói · 成 gợi âm chéng → lời thật
+坏|土+不|土 đất → hỏng
+减|冫+咸|bớt đi
+控|扌+空|扌 tay → nắm giữ, khống chế
+买|乛+头|mua
+导|巳+寸|dẫn dắt
+第|竹+弟|竹 tre → thứ tự
+谢|讠+射|讠 lời nói → cảm tạ
+须|彡+页|页 đầu → râu; nghĩa mở rộng: phải
+促|亻+足|亻 người → thúc giục
+承|承|nhận lấy
+视|礻+见|见 nhìn → xem xét
+持|扌+寺|扌 tay · 寺 gợi âm sì→chí → cầm giữ
+变|亦+又|thay đổi
+航|舟+亢|舟 thuyền → đi tàu
+抄|扌+少|扌 tay → chép lại
+避|辶+辟|辶 đi lại → né tránh
+递|辶+弟|辶 đi lại → chuyển giao
+住|亻+主|亻 người · 主 gợi âm zhǔ→zhù → ở
+新|亲+斤|斤 rìu → chặt cây lấy gỗ mới
+据|扌+居|扌 tay → nắm căn cứ
+套|大+長|bộ, bao
+选|辶+先|辶 đi lại → chọn ra
+附|阝+付|阝 gò đất → kèm theo
+港|氵+巷|氵 nước → bến nước
+测|氵+则|氵 nước → đo mực nước
+服|月+卩+又|quần áo; phục vụ
+剪|前+刀|刀 dao → cắt
+链|钅+连|钅 kim loại → dây xích
+追|辶+㠯|辶 đi lại → đuổi theo
+夹|夹|kẹp
+酒|氵+酉|氵 nước + 酉 (bình rượu) → rượu
+店|广+占|广 mái che → cửa tiệm
+柜|木+巨|木 gỗ → tủ
+漏|氵+屚|氵 nước → rò rỉ
+断|米+斤|斤 rìu → chặt đứt
+照|昭+灬|灬 lửa → soi sáng, chụp ảnh
+沟|氵+勾|氵 nước → rãnh nước
+努|奴+力|力 sức → gắng sức
+节|艹+卩|艹 cỏ → đốt tre, tiết
+笔|竹+毛|竹 tre + 毛 lông → cây bút
+赶|走+干|走 chạy → đuổi theo, chạy đua
+序|广+予|广 mái che → thứ tự
+废|广+发|广 mái che → bỏ đi
+维|纟+隹|纟 sợi → buộc giữ, duy trì
+养|羊+介|羊 dê → nuôi
+操|扌+喿|扌 tay → thao tác
+存|才+子|giữ lại
+培|土+咅|土 đất → vun đắp
+帽|巾+冒|巾 vải → cái mũ
+伤|亻+⺈+力|người bị tổn thương
+讨|讠+寸|讠 lời nói → bàn, đòi
+论|讠+仑|讠 lời nói → bàn luận
+填|土+真|土 đất → lấp đầy, điền
+落|艹+洛|艹 cỏ → rơi rụng
+病|疒+丙|疒 bệnh · 丙 gợi âm bǐng→bìng
+勤|堇+力|力 sức → chăm chỉ
+联|耳+关|耳 tai → nối liền
+源|氵+原|氵 nước + 原 nguồn → nguồn nước
+输|车+俞|车 xe → chuyên chở
+储|亻+诸|亻 người → tích trữ
+索|十+糸|糸 dây → dây thừng, đòi
+拒|扌+巨|扌 tay → chống lại
+绝|纟+色|纟 sợi → cắt đứt
+限|阝+艮|阝 gò đất → ranh giới
+距|足+巨|足 chân → khoảng cách
+叫|口+丩|口 miệng → kêu gọi
+热|执+灬|灬 lửa → nóng
+移|禾+多|禾 lúa → dời cây lúa
+较|车+交|车 xe · 交 gợi âm jiāo→jiào → so sánh
+求|求|cầu xin
+错|钅+昔|钅 kim loại → sai lệch
+连|辶+车|辶 đi lại + 车 xe → nối liền
+省|少+目|目 mắt → xem xét, tiết kiệm
+扩|扌+广|扌 tay → mở rộng
+像|亻+象|亻 người → giống, hình tượng
+估|亻+古|亻 người → ước lượng
+隔|阝+鬲|阝 gò đất → ngăn cách
+币|丿+巾|巾 vải → tiền tệ
+额|客+页|页 đầu/trán → số lượng
+份|亻+分|亻 người + 分 chia → phần
+吨|口+屯|đơn vị tấn
+厘|厂+里|đơn vị nhỏ
+增|土+曾|土 đất → chồng thêm
+均|土+匀|土 đất → san đều
+够|句+多|đủ
+初|衤+刀|dùng dao cắt vải = khởi đầu
+继|纟+米|纟 sợi → nối tiếp
+需|雨+而|雨 mưa → cần đến
+换|扌+奂|扌 tay → đổi
+择|扌+圣|扌 tay → chọn
+忘|亡+心|心 lòng → mất khỏi lòng = quên
+希|乂+巾|mong ước
+望|亡+月+壬|nhìn xa, mong đợi
+借|亻+昔|亻 người → mượn
+教|孝+攵|攵 tác động → dạy dỗ
+学|龸+子|đứa trẻ học
+映|日+央|日 mặt trời → chiếu
+细|纟+田|纟 sợi → nhỏ, kỹ
+满|氵+两|氵 nước → đầy
+稳|禾+急|禾 lúa → vững chắc
+熟|享+丸+灬|灬 lửa → nấu chín, thành thạo
+净|冫+争|sạch
+难|又+隹|khó
+容|宀+谷|mái nhà rộng = chứa đựng
+楼|木+娄|木 gỗ → nhà lầu
+近|辶+斤|辶 đi lại → gần
+旁|立+方|bên cạnh
+河|氵+可|氵 nước · 可 gợi âm kě→hé → sông
+焊|火+旱|火 lửa → hàn kim loại
+短|矢+豆|ngắn
+螺|虫+累|虫 côn trùng → con ốc
+静|青+争|yên lặng
+冲|冫+中|xối, dập
+喷|口+贲|口 miệng → phun ra
+漆|氵+桼|氵 nước → sơn
+镀|钅+度|钅 kim loại → mạ
+温|氵+昷|氵 nước → nước ấm
+布|ナ+巾|巾 vải → vải bố
+裁|土+衣+戈|衣 áo → cắt vải
+缝|纟+逢|纟 sợi → khâu vá
+拉|扌+立|扌 tay · 立 gợi âm lì→lā → kéo
+洗|氵+先|氵 nước → rửa
+称|禾+尔|禾 lúa → cân đo, gọi tên
+善|羊+口|tốt lành
+瓶|并+瓦|瓦 ngói/sành → cái bình
+颈|巠+页|页 đầu → cái cổ
+薪|艹+新|艹 cỏ → củi; lương bổng
+奖|将+大|phần thưởng
+脑|月+3|月 (nhục) → bộ não
+密|宀+必+山|kín đáo
+统|纟+充|纟 sợi → gom mối
+载|土+车+戈|车 xe → chở
+传|亻+专|亻 người → truyền đi
+频|步+页|页 đầu → tần suất
+络|纟+各|纟 sợi → mạng lưới
+待|彳+寺|彳 bước đi → chờ, đối đãi
+敬|苟+攵|攵 tác động → cung kính
+礼|礻+乚|礻 lễ nghi → lễ phép
+笑|竹+夭|cười
+盖|羊+皿|皿 đồ đựng → cái nắp
+章|立+早|chương, con dấu
+审|宀+申|dưới mái nhà xét xử = thẩm tra
+架|加+木|木 gỗ → cái giá
+托|扌+乇|扌 tay → nâng đỡ
+盘|舟+皿|皿 đồ đựng → cái mâm
+缠|纟+廛|纟 sợi → quấn
+膜|月+莫|月 (nhục) → màng
+盒|合+皿|皿 đồ đựng → cái hộp
+潮|氵+朝|氵 nước → thủy triều
+碎|石+卒|石 đá → vỡ vụn
+拖|扌+也+扌|扌 tay → kéo lê
+舱|舟+仓|舟 thuyền → khoang tàu
+滞|氵+带|氵 nước → nước đọng
+淡|氵+炎|氵 nước → nhạt
+型|刑+土|土 đất → khuôn đúc
+逐|辶+豕|辶 đi lại → đuổi theo, từng cái
+句|勹+口|口 miệng → câu nói
+纪|纟+己|纟 sợi → mối giềng, ghi chép
+指|扌+旨|扌 tay → ngón tay, chỉ
+词|讠+司|讠 lời nói → từ ngữ
+速|辶+束|辶 đi lại → nhanh
+局|尸+句|cục, ván cờ
+亏|一+丂|thiệt, khuyết
+馈|饣+贵|饣 ăn → tặng biếu, phản hồi
+拍|扌+白|扌 tay → vỗ, chụp
+性|忄+生|忄 lòng → bản tính
+钱|钅+戋|钅 kim loại → tiền
+组|纟+且|纟 sợi → bện lại, tổ nhóm
+刷|尸+巾+刂|巾 vải → chải quét
+噪|口+喿|口 miệng → ồn ào
+罩|罒+卓|罒 lưới → chụp, khẩu trang
+救|求+攵|攵 tác động → cứu giúp
+罚|罒+讠+刂|罒 lưới → hình phạt
+轮|车+仑|车 xe → bánh xe
+顶|丁+页|页 đầu → đỉnh
+例|亻+列|亻 người → lệ, ví dụ
+值|亻+直|亻 người → giá trị, trực
+除|阝+余|阝 gò đất → bỏ đi, chia
+简|竹+间|竹 tre → thẻ tre = giản lược
+聘|耳+甹|耳 tai → mời, tuyển
+秘|禾+必|禾 lúa → bí ẩn
+普|並+日|phổ biến
+团|囗+才|囗 khung → khối, đoàn
+队|阝+人|阝 gò đất → đội ngũ
+聚|取+乑|tụ họp
+餐|歺+又+食|食 ăn → bữa ăn
+破|石+皮|石 đá → vỡ
+独|犭+虫|犭 thú → một mình
+展|尸+龹|mở ra
+砍|石+欠|石 đá → chặt
+听|口+斤|口 miệng/tai → nghe
+恭|共+小|cung kính
+喜|壴+口|vui mừng
+祝|礻+兄|礻 lễ nghi → cầu chúc
+锈|钅+秀|钅 kim loại → gỉ sét
+钢|钅+冈|钅 kim loại → thép
+铝|钅+吕|钅 kim loại → nhôm
+铜|钅+同|钅 kim loại → đồng
+铁|钅+失|钅 kim loại → sắt
+玻|王+皮|王 (ngọc) → thủy tinh
+璃|王+离|王 (ngọc) → thủy tinh
+棉|木+帛|木 cây → cây bông
+橡|木+象|木 cây → cây cao su
+沫|氵+末|氵 nước → bọt nước
+颜|彦+页|页 đầu/mặt → sắc mặt, màu
+红|纟+工|纟 sợi → vải nhuộm đỏ
+蓝|艹+监|艹 cỏ → cây chàm nhuộm xanh
+绿|纟+录|纟 sợi → màu xanh lá
+黄|黄|màu vàng
+厚|厂+日+子|厂 vách núi → dày
+薄|艹+溥|艹 cỏ → mỏng
+硬|石+更|石 đá → cứng
+软|车+欠|车 xe → mềm
+轻|车+巠|车 xe → nhẹ
+痕|疒+艮|疒 bệnh → vết sẹo
+污|氵+亏|氵 nước → nước bẩn
+渍|氵+责|氵 nước → vết thấm
+裂|列+衣|衣 vải → rách
+鲜|鱼+羊|cá + dê → tươi ngon
+冷|冫+令|冫 băng → lạnh
+藏|艹+臧|艹 cỏ → cất giấu
+醒|酉+星|酉 rượu → tỉnh rượu
+释|釆+译|giải thích
+扬|扌+𠃓|扌 tay → giương lên
+评|讠+平|讠 lời nói · 平 gợi âm píng → bình luận
+邀|辶+敫|辶 đi lại → mời đón
+拜|手+手|hai tay chắp = lạy, thăm
+菜|艹+采|艹 cỏ → rau
+忌|己+心|心 lòng → kiêng kỵ
+杯|木+不|木 gỗ → cái cốc
+茶|艹+人+木|艹 cỏ → cây trà
+描|扌+苗|扌 tay → vẽ, quét
+贸|卯+贝|贝 tiền → buôn bán
+碑|石+卑|石 đá → bia đá
+摆|扌+罢|扌 tay → bày biện
+堆|土+隹|土 đất → đống
+挑|扌+兆|扌 tay → chọn, gánh
+类|米+大|米 gạo → loại
+撕|扌+斯|扌 tay → xé
+擦|扌+察|扌 tay → lau chùi
+梯|木+弟|木 gỗ → cái thang
+扇|户+羽|羽 lông → cái quạt
+灯|火+丁|火 lửa · 丁 gợi âm dīng→dēng
+插|扌+臿|扌 tay → cắm
+座|广+坐|广 mái che → chỗ ngồi
+肯|止+月|chịu, khẳng định
+找|扌+戈|扌 tay → tìm
+桌|卓+木|木 gỗ → cái bàn
+钥|钅+月|钅 kim loại → chìa khóa
+跌|足+失|足 chân → ngã, rớt giá
+含|今+口|口 miệng → ngậm, chứa
+拟|扌+以|扌 tay → phác thảo
+欢|又+欠|vui vẻ
+迎|辶+卬|辶 đi lại → đón`;
+const DECOMP={};
+DECOMP_RAW.split('\n').forEach(l=>{const p=l.split('|');if(p.length>=2)DECOMP[p[0]]={parts:p[1],why:p[2]||''};});
+
+/* --- 3. BẪY HÁN VIỆT ---------------------------------------------
+   Hán Việt là CẦU NỐI TRÍ NHỚ, không phải bản dịch.                 */
+const HVTRAP={
+ match:[['质量','CHẤT LƯỢNG','chất lượng'],['合同','HỢP ĐỒNG','hợp đồng'],['检查','KIỂM TRA','kiểm tra'],
+  ['报告','BÁO CÁO','báo cáo'],['严重','NGHIÊM TRỌNG','nghiêm trọng'],['技术','KỸ THUẬT','kỹ thuật'],
+  ['安全','AN TOÀN','an toàn'],['生产','SINH SẢN','sản xuất — gần khớp'],['经验','KINH NGHIỆM','kinh nghiệm']],
+ partial:[['提高','ĐỀ CAO','nâng cao (tiếng Việt "đề cao" ≈ ca ngợi — hơi lệch)'],
+  ['安排','AN BÀI','sắp xếp (tiếng Việt "an bài" nghiêng về số phận)'],
+  ['方便','PHƯƠNG TIỆN','tiện lợi (tiếng Việt "phương tiện" = xe cộ/cách thức)'],
+  ['工作','CÔNG TÁC','công việc nói chung (tiếng Việt "công tác" thường = đi công tác)'],
+  ['汇报','HỐI BÁO','báo cáo lên cấp trên'],
+  ['客户','KHÁCH HỘ','khách hàng doanh nghiệp']],
+ 差:[['经理','KINH LÝ','giám đốc / quản lý — KHÔNG phải "kinh lý"'],
+  ['出差','XUẤT SAI','đi công tác'],
+  ['东西','ĐÔNG TÂY','đồ vật — không liên quan phương hướng'],
+  ['客气','KHÁCH KHÍ','khách sáo, lịch sự'],
+  ['打算','ĐẢ TOÁN','dự định'],
+  ['认真','NHẬN CHÂN','nghiêm túc, cẩn thận'],
+  ['麻烦','MA PHIỀN','phiền phức, làm phiền'],
+  ['意思','Ý TỨ','ý nghĩa (không phải "ý tứ" tế nhị)']]
+};
+
+/* --- 4. MINI-COURSE: 8 nét, mỗi nét viết ngay -------------------- */
+const STROKE_COURSE=[
+ {k:'p1',type:'stroke',g:'一',zh:'横',py:'héng',vi:'Nét ngang',tip:'Kéo từ TRÁI sang PHẢI, hơi nhích lên ở cuối.',write:'一',after:'Bạn vừa viết xong chữ 一 (NHẤT) — chữ Hán đơn giản nhất, cũng chính là một nét ngang.'},
+ {k:'p2',type:'stroke',g:'丨',zh:'竖',py:'shù',vi:'Nét sổ',tip:'Kéo thẳng từ TRÊN xuống DƯỚI, giữ thật thẳng.',write:'十',after:'一 + 丨 = 十 (THẬP, mười). Đúng quy tắc: NGANG trước, SỔ sau.'},
+ {k:'p3',type:'stroke',g:'丿',zh:'撇',py:'piě',vi:'Nét phẩy',tip:'Từ trên bên phải hất xuống bên trái, nhẹ dần ở đuôi.',write:'千',after:'千 (THIÊN, nghìn) = 丿 + 十. Con số bạn dùng hằng ngày khi nói số lượng hàng.'},
+ {k:'p4',type:'stroke',g:'㇏',zh:'捺',py:'nà',vi:'Nét mác',tip:'Từ trên bên trái kéo xuống bên phải, nặng dần rồi bè ra.',write:'人',after:'丿 + ㇏ = 人 (NHÂN, người). Quy tắc: PHẨY trước, MÁC sau. 工人 = công nhân.'},
+ {k:'p5',type:'stroke',g:'丶',zh:'点',py:'diǎn',vi:'Nét chấm',tip:'Chấm ngắn, đưa bút từ trên xuống, hơi nghiêng phải.',write:'小',after:'小 (TIỂU, nhỏ) — nét giữa trước, hai bên sau. 小时 = giờ đồng hồ.'},
+ {k:'p6',type:'stroke',g:'㇀',zh:'提',py:'tí',vi:'Nét hất',tip:'Từ dưới bên trái HẤT LÊN phía phải — rất hay gặp ở bộ 扌 và 氵.',write:'打',after:'打 (ĐẢ) có bộ 扌 với nét hất ở cuối. 打卡 = chấm công, 打电话 = gọi điện.'},
+ {k:'p7',type:'stroke',g:'乛',zh:'折',py:'zhé',vi:'Nét gập',tip:'MỘT nét liền nhưng đổi hướng giữa chừng — tuyệt đối không nhấc bút.',write:'口',after:'口 (KHẨU, miệng) chỉ có 3 nét chứ không phải 4, vì nét thứ 2 là nét gập. 出口 = xuất khẩu.'},
+ {k:'p8',type:'stroke',g:'亅',zh:'钩',py:'gōu',vi:'Nét móc',tip:'Cuối nét hất ngược lại một móc nhỏ.',write:'了',after:'了 (LIỄU) — trợ từ quan trọng nhất tiếng Trung: 货到了 = hàng đến rồi.'},
+ {k:'r1',type:'rule',zh:'先横后竖',py:'xiān héng hòu shù',vi:'Ngang trước, sổ sau',tip:'Nét ngang cắt nét sổ thì viết ngang trước.',write:'工',after:'工 (CÔNG) — 工厂 nhà máy, 工人 công nhân, 加工 gia công.'},
+ {k:'r2',type:'rule',zh:'先撇后捺',py:'xiān piě hòu nà',vi:'Phẩy trước, mác sau',tip:'Hai nét xiên bắt chéo: phẩy (trái) đi trước mác (phải).',write:'交',after:'交 (GIAO) — 交货 giao hàng, 交期 kỳ hạn giao, 交接班 giao ca.'},
+ {k:'r3',type:'rule',zh:'从上到下',py:'cóng shàng dào xià',vi:'Trên trước, dưới sau',tip:'Chữ xếp tầng thì viết tầng trên trước.',write:'员',after:'员 (VIÊN) = 口 trên + 贝 dưới. 员工 nhân viên, 质检员 nhân viên QC.'},
+ {k:'r4',type:'rule',zh:'从左到右',py:'cóng zuǒ dào yòu',vi:'Trái trước, phải sau',tip:'Chữ có bộ bên trái thì viết bộ trái trước, thân phải sau.',write:'机',after:'机 (CƠ) = 木 trái + 几 phải. 机器 máy móc, 三号机 máy số 3.'},
+ {k:'r5',type:'rule',zh:'先外后内',py:'xiān wài hòu nèi',vi:'Ngoài trước, trong sau',tip:'Khung bao ngoài viết trước, ruột bên trong viết sau.',write:'同',after:'同 (ĐỒNG) — 同事 đồng nghiệp, 合同 hợp đồng.'},
+ {k:'r6',type:'rule',zh:'先里头后封口',py:'xiān lǐtou hòu fēngkǒu',vi:'Vào nhà trước, đóng cửa sau',tip:'Khung kín: 3 cạnh → ruột bên trong → CUỐI CÙNG mới đóng nét dưới.',write:'国',after:'国 (QUỐC) — 中国 Trung Quốc. Nét cuối cùng chính là nét ngang đóng đáy khung.'},
+ {k:'r7',type:'rule',zh:'先中间后两边',py:'xiān zhōngjiān hòu liǎngbiān',vi:'Giữa trước, hai bên sau',tip:'Chữ đối xứng thì nét giữa viết trước, rồi mới hai bên.',write:'水',after:'水 (THỦY, nước) — bộ 氵 trong 港 cảng, 清关 thông quan đều từ chữ này.'}
+];
+
+/* --- 5. SRS CHO CHỮ VIẾT: 6 cấp, hỗ trợ giảm dần ------------------ */
+const WLV=[
+ {n:1,name:'Viết theo mẫu',desc:'Có nét mờ dẫn đường',outline:true,show:'char',iv:10*60e3,ivLabel:'10 phút'},
+ {n:2,name:'Không xem mẫu',desc:'Ẩn nét mờ, chỉ nhớ hình chữ',outline:false,show:'char',iv:864e5,ivLabel:'1 ngày'},
+ {n:3,name:'Từ âm đọc',desc:'Chỉ cho pinyin + Hán Việt',outline:false,show:'pinyin',iv:3*864e5,ivLabel:'3 ngày'},
+ {n:4,name:'Từ nghĩa',desc:'Chỉ cho nghĩa tiếng Việt',outline:false,show:'meaning',iv:7*864e5,ivLabel:'7 ngày'},
+ {n:5,name:'Điền vào từ',desc:'Điền chữ còn thiếu trong từ chuyên ngành',outline:false,show:'blank',iv:14*864e5,ivLabel:'14 ngày'},
+ {n:6,name:'Viết trong câu',desc:'Viết chữ trong câu công việc thật',outline:false,show:'sentence',iv:30*864e5,ivLabel:'30 ngày'}
+];
+const MASTERY=[['Chưa học','var(--ink3)'],['Learning','var(--warn)'],['Learning','var(--warn)'],['Familiar','var(--mfg)'],['Remembered','var(--interp)'],['Remembered','var(--interp)'],['Mastered','var(--good)']];
+</script>
+<style>
+/* =====================================================================
+   STROKE ORDER ANIMATION — style
+   Phong cách workbook + digital: sạch, nhiều whitespace, nét đỏ là accent
+   ===================================================================== */
+:root{ --hz-ink:#1D1A15; --hz-red:#C8352A; --hz-guide:rgba(29,26,21,.10); --hz-grid:rgba(29,26,21,.16); }
+:root[data-theme="dark"]{ --hz-ink:#E8E2D6; --hz-red:#E0705C; --hz-guide:rgba(232,226,214,.12); --hz-grid:rgba(232,226,214,.16); }
+
+.hzg{position:relative;width:100%;aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.hzg svg{display:block;width:100%;height:100%}
+.hzg-line{stroke:var(--hz-grid);stroke-width:1.6;fill:none}
+.hzg-line.dash{stroke-dasharray:14 12}
+.hzg-line.diag{opacity:.55}
+.hz-fill{fill:var(--hz-guide);transition:fill .22s ease,opacity .22s ease}
+.hz-stroke.done .hz-fill{fill:var(--hz-ink)}
+.hz-stroke.active .hz-fill{fill:var(--hz-red)}
+.hz-stroke.hidden .hz-fill{opacity:0}
+.hz-brushg{display:none}
+.hz-brushg.on{display:block}
+.hz-brush{fill:none;stroke:var(--hz-red);stroke-width:128;stroke-linecap:round;stroke-linejoin:round}
+.hz-pen{fill:var(--hz-red);opacity:0;transition:opacity .15s}
+.hz-pen.on{opacity:1}
+.hz-startdot{fill:none;stroke:var(--hz-red);stroke-width:14;opacity:0}
+.hz-startdot.on{opacity:1;animation:hzpulse .8s ease-in-out infinite}
+@keyframes hzpulse{0%,100%{r:34;opacity:.9}50%{r:52;opacity:.35}}
+.hz-arrow{fill:var(--hz-red);opacity:0}
+.hz-arrow.on{opacity:.85}
+.hz-stroke.wrong .hz-fill{fill:var(--bad)}
+.hz-stroke.wrong{animation:hzshake .32s}
+@keyframes hzshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+
+/* player shell */
+.sp-wrap{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.sp-stage{flex:0 0 340px;max-width:340px;width:100%}
+@media(max-width:820px){.sp-stage{flex:1 1 100%;max-width:min(300px,80vw);margin:0 auto}}
+.sp-side{flex:1;min-width:250px}
+.sp-ctl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.sp-btn{min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:600;transition:all .15s}
+.sp-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.sp-btn:disabled{opacity:.4;cursor:default}
+.sp-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sp-count{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;min-width:78px;text-align:center}
+.sp-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:10px}
+.sp-chip{padding:6px 11px;border-radius:99px;border:1px solid var(--border2);font-size:12px;font-weight:600;color:var(--ink2);min-height:32px}
+.sp-chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sp-chip.tog.on{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.sp-info{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface)}
+.sp-info-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sp-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--hz-red)}
+.sp-badge i{width:8px;height:8px;border-radius:99px;background:var(--hz-red);animation:hzblink 1s infinite}
+@keyframes hzblink{0%,100%{opacity:1}50%{opacity:.25}}
+/* mini strip */
+.sp-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 2px 12px;scroll-behavior:smooth}
+.sp-frame{flex:0 0 auto;width:62px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);padding:3px;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.sp-frame:hover{border-color:var(--ink3)}
+.sp-frame.cur{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.03)}
+.sp-frame svg{display:block;width:100%;height:auto}
+.sp-frame .n{font-size:9.5px;text-align:center;color:var(--ink3);font-variant-numeric:tabular-nums;margin-top:1px}
+.sp-frame.cur .n{color:var(--accent-ink);font-weight:700}
+.sp-fallback{display:grid;place-items:center;height:100%;text-align:center;padding:12px}
+@media (prefers-reduced-motion: reduce){.hz-startdot.on{animation:none}.sp-badge i{animation:none}}
+</style>
+<script>
+/* =====================================================================
+   1. DATA LAYER — cache localStorage → CDN1 → CDN2 → CDN3
+   Không thêm thư viện mới: dùng chính bộ dữ liệu hanzi-writer-data.
+   ===================================================================== */
+const CHDATA={};                     // char -> Promise<{strokes,medians}>
+const CHDATA_CDN=[
+ c=>`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/${encodeURIComponent(c)}.json`,
+ c=>`https://unpkg.com/hanzi-writer-data@2.0.1/${encodeURIComponent(c)}.json`,
+ c=>`https://cdn.jsdelivr.net/gh/chanind/hanzi-writer-data@master/data/${encodeURIComponent(c)}.json`
+];
+let CHDATA_FAIL=false;
+function hzCacheGet(ch){try{const s=localStorage.getItem('hz:'+ch);if(s){const d=JSON.parse(s);if(d&&d.strokes&&d.medians)return d;}}catch(e){}return null;}
+function hzCachePut(ch,d){try{localStorage.setItem('hz:'+ch,JSON.stringify({strokes:d.strokes,medians:d.medians}));}
+ catch(e){try{Object.keys(localStorage).filter(k=>k.startsWith('hz:')).slice(0,60).forEach(k=>localStorage.removeItem(k));localStorage.setItem('hz:'+ch,JSON.stringify({strokes:d.strokes,medians:d.medians}));}catch(e2){}}}
+function charData(ch){
+ if(CHDATA[ch])return CHDATA[ch];
+ CHDATA[ch]=(async()=>{
+  const cached=hzCacheGet(ch); if(cached)return cached;
+  for(const mk of CHDATA_CDN){
+   try{
+    const r=await fetch(mk(ch),{mode:'cors'});
+    if(!r.ok)continue;
+    const d=await r.json();
+    if(d&&d.strokes&&d.medians){hzCachePut(ch,d);return d;}
+   }catch(e){}
+  }
+  CHDATA_FAIL=true;
+  throw new Error('no-stroke-data');
+ })();
+ return CHDATA[ch];
+}
+/* =====================================================================
+   2. NHẬN DIỆN LOẠI NÉT từ dữ liệu median (không đoán bừa theo chữ)
+   ===================================================================== */
+function polyLen(m){let L=0;for(let i=1;i<m.length;i++)L+=Math.hypot(m[i][0]-m[i-1][0],m[i][1]-m[i-1][1]);return L;}
+function segDir(m,a,b){return [m[b][0]-m[a][0],m[b][1]-m[a][1]];}
+function angDeg(v){return Math.atan2(-v[1],v[0])*180/Math.PI;}   // -y vì dữ liệu có trục y hướng lên
+function angDiff(a,b){let d=Math.abs(a-b)%360;return d>180?360-d:d;}
+function classifyStroke(m){
+ if(!m||m.length<2)return {zh:'点',py:'diǎn',vi:'nét chấm',rule:'Chấm ngắn.',hook:false};
+ const n=m.length,L=polyLen(m);
+ const nz=v=>Math.hypot(v[0],v[1])>1e-6;
+ /* độ gập: chỉ tính khi polyline đủ điểm và cả hai đoạn đều không suy biến */
+ let turn=0;
+ if(n>=4){
+  const i1=Math.max(1,Math.round(n*0.3)), i2=Math.min(n-2,Math.max(i1,Math.round(n*0.7)));
+  const dA=segDir(m,0,i1), dB=segDir(m,i2,n-1);
+  if(nz(dA)&&nz(dB))turn=angDiff(angDeg(dA),angDeg(dB));
+ }
+ /* góc TỔNG THỂ theo toạ độ MÀN HÌNH: 0°=sang phải, +90°=xuống dưới, -45°=hất lên phải */
+ const whole=angDeg(segDir(m,0,n-1));
+ /* móc ở cuối: đoạn cuối ngắn và đổi hướng mạnh */
+ let hook=false;
+ if(n>=3){
+  const tail=Math.hypot(m[n-1][0]-m[n-2][0],m[n-1][1]-m[n-2][1]);
+  const dP=segDir(m,n-3,n-2),dQ=segDir(m,n-2,n-1);
+  hook=tail<L*0.22&&nz(dP)&&nz(dQ)&&angDiff(angDeg(dP),angDeg(dQ))>75;
+ }
+ const nm=(zh,py,vi,rule)=>({zh,py,vi,rule,hook});
+ if(L<170&&turn<45)          return nm('点','diǎn','nét chấm','Chấm ngắn, đưa bút từ trên xuống, hơi nghiêng phải.');
+ if(turn>=52)                return nm(hook?'折钩':'折','zhé','nét gập','Một nét liền có đổi hướng — tuyệt đối KHÔNG nhấc bút giữa chừng.');
+ const a=whole;
+ if(a>=-20&&a<=20)           return nm(hook?'横钩':'横','héng','nét ngang','Viết từ TRÁI sang PHẢI.');
+ if(a>20&&a<=72)             return nm(hook?'捺钩':'捺','nà','nét mác','Viết từ trên TRÁI xuống dưới PHẢI, nặng dần rồi bè ra ở cuối.');
+ if(a>72&&a<=108)            return nm(hook?'竖钩':'竖','shù','nét sổ','Viết từ TRÊN xuống DƯỚI, giữ thật thẳng.');
+ if(a>108)                   return nm(hook?'撇钩':'撇','piě','nét phẩy','Viết từ trên PHẢI xuống dưới TRÁI, nhẹ dần ở đuôi.');
+ return nm('提','tí','nét hất','Hất từ dưới bên TRÁI lên phía trên bên PHẢI.');
+}
+/* =====================================================================
+   3. HanziWritingGrid — ô 米字格 dùng lại được
+   ===================================================================== */
+function HanziWritingGrid(show){
+ return `<g class="hzg-grid" aria-hidden="true" ${show===false?'style="display:none"':''}>
+  <rect x="2" y="2" width="1020" height="1020" rx="10" class="hzg-line"/>
+  <line x1="512" y1="2" x2="512" y2="1022" class="hzg-line dash"/>
+  <line x1="2" y1="512" x2="1022" y2="512" class="hzg-line dash"/>
+  <line x1="2" y1="2" x2="1022" y2="1022" class="hzg-line dash diag"/>
+  <line x1="1022" y1="2" x2="2" y2="1022" class="hzg-line dash diag"/>
+ </g>`;
+}
+const HZ_TF='translate(0,900) scale(1,-1)';   // dữ liệu: x 0..1024, y -124..900 (trục y hướng lên)
+const medD=m=>'M'+m.map(p=>p[0]+' '+p[1]).join('L');
+/* =====================================================================
+   4. HanziStrokePreview — dải mini frame (tĩnh, nhẹ)
+   ===================================================================== */
+function HanziStrokePreview(strokes,upto){
+ return `<svg viewBox="0 0 1024 1024" aria-hidden="true"><g transform="${HZ_TF}">${
+  strokes.map((d,i)=>`<path d="${d}" fill="${i<upto?'var(--hz-ink)':i===upto?'var(--hz-red)':'var(--hz-guide)'}"/>`).join('')
+ }</g></svg>`;
+}
+function stripHTML(strokes,cur){
+ return strokes.map((_,i)=>`<button class="sp-frame ${i===cur?'cur':''}" data-f="${i}" aria-label="Xem nét ${i+1}">
+   ${HanziStrokePreview(strokes,i)}<div class="n">${i+1}</div></button>`).join('');
+}
+/* =====================================================================
+   5. HanziStrokePlayer — engine chính
+   API: play() pause() toggle() restart() next() prev() goTo(i) setSpeed() setMode()
+   ===================================================================== */
+let _spUID=0;
+class HanziStrokePlayer{
+ constructor(host,opts={}){
+  this.host=host; this.uid='sp'+(++_spUID);
+  this.ch=null; this.strokes=[]; this.medians=[]; this.lens=[];
+  this.current=-1; this.playing=false; this.speed=opts.speed||1;
+  this.mode=opts.mode||'all';                 // all | step | slow | loop
+  this.showOutline=opts.showOutline!==false;
+  this.showGrid=opts.showGrid!==false;
+  this.showDirection=!!opts.showDirection;
+  this.onChange=opts.onChange||(()=>{});
+  this.reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  this._raf=null; this._timer=null; this._prog=0; this._destroyed=false;
+ }
+ async load(ch){
+  this.ch=ch; this.host.innerHTML=`<div class="hzg"><div class="sp-fallback" style="color:var(--ink3);font-size:12px">Đang tải nét chữ…</div></div>`;
+  try{
+   const d=await charData(ch);
+   if(this._destroyed)return;
+   this.strokes=d.strokes; this.medians=d.medians;
+   this.lens=this.medians.map(polyLen);
+   this._build(); this.goTo(-1); this.emit();
+   return true;
+  }catch(e){
+   if(this._destroyed)return;
+   this._fallback(); this.emit(); return false;
+  }
+ }
+ _fallback(){
+  const i=(typeof HV!=='undefined'&&HV[this.ch])||{};
+  this.host.innerHTML=`<div class="hzg"><svg viewBox="0 0 1024 1024">${HanziWritingGrid(this.showGrid)}
+   <text x="512" y="512" text-anchor="middle" dominant-baseline="central" font-family="Noto Serif SC, serif" font-weight="900" font-size="620" fill="var(--hz-ink)">${esc(this.ch)}</text></svg></div>
+   <div class="hz-warn" style="margin-top:10px">Không tải được dữ liệu thứ tự nét. Bạn vẫn có thể học cấu tạo và nghĩa của chữ${i.hv?` — ${esc(this.ch)} · ${esc(i.p||'')} · <b>${esc(i.hv)}</b>`:''}.</div>`;
+  this.failed=true;
+ }
+ _build(){
+  const S=this.strokes,M=this.medians;
+  this.host.innerHTML=`<div class="hzg"><svg viewBox="0 0 1024 1024" role="img" aria-label="Thứ tự nét chữ ${esc(this.ch)}">
+   <defs>${S.map((d,i)=>`<clipPath id="${this.uid}c${i}"><path d="${d}"/></clipPath>`).join('')}</defs>
+   ${HanziWritingGrid(this.showGrid)}
+   <g transform="${HZ_TF}">
+    ${S.map((d,i)=>`<g class="hz-stroke" data-s="${i}"><path class="hz-fill" d="${d}"/></g>`).join('')}
+    ${S.map((d,i)=>`<g class="hz-brushg" data-b="${i}" clip-path="url(#${this.uid}c${i})"><path class="hz-brush" d="${medD(M[i])}"/></g>`).join('')}
+    <path class="hz-arrow"/>
+    <circle class="hz-startdot" r="34"/>
+    <circle class="hz-pen" r="26"/>
+   </g></svg></div>`;
+  const q=s=>this.host.querySelector(s);
+  this.els={svg:q('svg'),pen:q('.hz-pen'),dot:q('.hz-startdot'),arrow:q('.hz-arrow'),
+   strokes:[...this.host.querySelectorAll('.hz-stroke')],brush:[...this.host.querySelectorAll('.hz-brushg')]};
+ }
+ /* ---- trạng thái tĩnh: nét < i đen, nét i đỏ, nét > i mờ ---- */
+ _paint(i,activeVisible=true){
+  this.els.strokes.forEach((g,k)=>{
+   g.classList.toggle('done',k<i);
+   g.classList.toggle('active',k===i&&activeVisible);
+   g.classList.toggle('hidden',k>i&&!this.showOutline);
+  });
+  this.els.brush.forEach(b=>b.classList.remove('on'));
+ }
+ emit(){this.onChange&&this.onChange(this.state());}
+ state(){return {ch:this.ch,total:this.strokes.length,current:this.current,playing:this.playing,
+  speed:this.speed,mode:this.mode,showOutline:this.showOutline,showGrid:this.showGrid,
+  showDirection:this.showDirection,failed:!!this.failed,
+  stroke:this.current>=0&&this.medians[this.current]?classifyStroke(this.medians[this.current]):null};}
+ _clear(){if(this._raf)cancelAnimationFrame(this._raf);if(this._timer)clearTimeout(this._timer);this._raf=this._timer=null;}
+ _dur(i){const L=this.lens[i]||400;return Math.min(1600,Math.max(320,L*0.95))/this.speed*(this.mode==='slow'?2:1);}
+ /* ---- vẽ 1 nét theo đúng hướng bút ---- */
+ _drawStroke(i,cb){
+  const m=this.medians[i],len=this.lens[i],brush=this.els.brush[i],path=brush.querySelector('.hz-brush');
+  this._paint(i,false);
+  brush.classList.add('on');
+  path.style.strokeDasharray=len+' '+len;
+  const pen=this.els.pen;
+  if(this.reduce){ path.style.strokeDashoffset=0; pen.classList.remove('on'); this._finishStroke(i,cb); return; }
+  path.style.strokeDashoffset=len;
+  pen.classList.add('on');
+  const dur=this._dur(i),t0=performance.now()-this._prog*dur;
+  const tick=now=>{
+   if(this._destroyed)return;
+   let t=Math.min(1,(now-t0)/dur); this._prog=t;
+   path.style.strokeDashoffset=len*(1-t);
+   const p=this._pointAt(m,t); pen.setAttribute('cx',p[0]); pen.setAttribute('cy',p[1]);
+   if(t<1){this._raf=requestAnimationFrame(tick);}
+   else{this._prog=0;pen.classList.remove('on');this._finishStroke(i,cb);}
+  };
+  this._raf=requestAnimationFrame(tick);
+ }
+ _finishStroke(i,cb){
+  const brush=this.els.brush[i];
+  brush.classList.remove('on');
+  this._paint(i,true);
+  this._drawArrow(i);
+  cb&&cb();
+ }
+ _pointAt(m,t){
+  const target=polyLen(m)*t; let acc=0;
+  for(let i=1;i<m.length;i++){
+   const seg=Math.hypot(m[i][0]-m[i-1][0],m[i][1]-m[i-1][1]);
+   if(acc+seg>=target){const r=seg?(target-acc)/seg:0;return [m[i-1][0]+(m[i][0]-m[i-1][0])*r,m[i-1][1]+(m[i][1]-m[i-1][1])*r];}
+   acc+=seg;
+  }
+  return m[m.length-1];
+ }
+ _drawArrow(i){
+  const a=this.els.arrow;
+  if(!this.showDirection||i<0||!this.medians[i]){a.classList.remove('on');return;}
+  const m=this.medians[i],p=this._pointAt(m,0.62),q=this._pointAt(m,0.72);
+  const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,s=46;
+  const tip=[p[0]+ux*s,p[1]+uy*s], l=[p[0]-uy*s*0.5,p[1]+ux*s*0.5], r=[p[0]+uy*s*0.5,p[1]-ux*s*0.5];
+  a.setAttribute('d',`M${tip[0]} ${tip[1]}L${l[0]} ${l[1]}L${r[0]} ${r[1]}Z`);
+  a.classList.add('on');
+ }
+ _showStartDot(i,cb){
+  const d=this.els.dot,m=this.medians[i];
+  if(this.mode!=='slow'&&!this.showDirection){cb();return;}
+  d.setAttribute('cx',m[0][0]); d.setAttribute('cy',m[0][1]); d.classList.add('on');
+  this._timer=setTimeout(()=>{d.classList.remove('on');cb();},this.mode==='slow'?520:240);
+ }
+ /* ---------------- PUBLIC API ---------------- */
+ goTo(i){                       // i = -1 nghĩa là chưa viết nét nào
+  if(this.failed)return;
+  this._clear(); this.playing=false; this._prog=0;
+  this.current=Math.max(-1,Math.min(this.strokes.length-1,i));
+  this._paint(this.current,true);
+  this.els.pen.classList.remove('on'); this.els.dot.classList.remove('on');
+  this._drawArrow(this.current);
+  this.emit();
+ }
+ play(){
+  if(this.failed||this.playing)return;
+  if(this.current>=this.strokes.length-1&&this._prog===0)this.current=-1;
+  this.playing=true; this.emit(); this._step();
+ }
+ _step(){
+  const next=this.current+1;
+  if(next>=this.strokes.length){
+   this.playing=false; this.emit();
+   if(this.mode==='loop')this._timer=setTimeout(()=>{if(!this._destroyed){this.goTo(-1);this.play();}},1600);
+   return;
+  }
+  this.current=next; this.emit();
+  this._showStartDot(next,()=>{
+   this._drawStroke(next,()=>{
+    if(!this.playing)return;
+    if(this.mode==='step'){this.playing=false;this.emit();return;}
+    this._timer=setTimeout(()=>{if(this.playing)this._step();},this.mode==='slow'?520:190);
+   });
+  });
+ }
+ pause(){this._clear();this.playing=false;
+  if(this.current>=0){this._paint(this.current,true);this.els.pen.classList.remove('on');this.els.dot.classList.remove('on');this._prog=0;}
+  this.emit();}
+ toggle(){this.playing?this.pause():this.play();}
+ restart(){this.goTo(-1);this.play();}
+ next(){if(this.failed)return;this._clear();this.playing=true;
+  const n=Math.min(this.strokes.length-1,this.current+1);
+  if(n===this.current){this.playing=false;this.emit();return;}
+  this.current=n;this.emit();
+  this._showStartDot(n,()=>this._drawStroke(n,()=>{this.playing=false;this.emit();}));}
+ prev(){if(this.failed)return;this.goTo(this.current-1);}
+ setSpeed(s){this.speed=s;this.emit();}
+ setMode(m){this.mode=m;this._clear();this.playing=false;
+  if(m==='slow')this.speed=Math.min(this.speed,0.75);
+  this.emit();}
+ setOutline(v){this.showOutline=v;this._paint(this.current,true);this.emit();}
+ setGrid(v){this.showGrid=v;const g=this.host.querySelector('.hzg-grid');if(g)g.style.display=v?'':'none';this.emit();}
+ setDirection(v){this.showDirection=v;this._drawArrow(this.current);this.emit();}
+ destroy(){this._destroyed=true;this._clear();}
+}
+/* =====================================================================
+   6. StrokeControls — thanh điều khiển + thông tin nét + mini strip
+   ===================================================================== */
+function StrokeControls(host,player,opts={}){
+ host.innerHTML=`
+  <div class="sp-ctl">
+   <button class="sp-btn" data-a="restart" aria-label="Viết lại từ đầu" title="Viết lại từ đầu">⏮</button>
+   <button class="sp-btn" data-a="prev" aria-label="Nét trước" title="Nét trước">◀</button>
+   <button class="sp-btn primary" data-a="toggle" aria-label="Phát hoặc tạm dừng" title="Phát / Tạm dừng"><span data-pp>▶</span></button>
+   <button class="sp-btn" data-a="next" aria-label="Nét tiếp theo" title="Nét tiếp theo">▶|</button>
+   <span class="sp-count" data-count aria-live="polite">Nét –/–</span>
+  </div>
+  <div class="sp-row" role="group" aria-label="Chế độ chạy">
+   ${[['all','Phát toàn bộ'],['step','Từng nét'],['slow','Chậm & kỹ'],['loop','Lặp lại']].map(m=>`<button class="sp-chip" data-mode="${m[0]}">${m[1]}</button>`).join('')}
+  </div>
+  <div class="sp-row" role="group" aria-label="Tốc độ">
+   <span style="font-size:11.5px;color:var(--ink3);font-weight:700;letter-spacing:.06em">TỐC ĐỘ</span>
+   ${[0.5,0.75,1,1.25].map(s=>`<button class="sp-chip" data-speed="${s}">${s}x</button>`).join('')}
+  </div>
+  <div class="sp-row" role="group" aria-label="Hiển thị">
+   <button class="sp-chip tog" data-tog="outline">Chữ mẫu</button>
+   <button class="sp-chip tog" data-tog="grid">Ô kẻ</button>
+   <button class="sp-chip tog" data-tog="direction">Hướng nét</button>
+  </div>
+  <div class="sp-info" style="margin-top:12px" data-info></div>
+  ${opts.strip===false?'':`<div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:14px 0 2px">Xem từng bước · 笔顺分解</div>
+  <div class="sp-strip" data-strip role="group" aria-label="Các bước viết"></div>`}
+  ${opts.cta?`<div style="margin-top:6px">${opts.cta}</div>`:''}`;
+ const q=s=>host.querySelector(s);
+ const strip=q('[data-strip]');
+ host.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.dataset.a)({restart:()=>player.restart(),prev:()=>player.prev(),next:()=>player.next(),toggle:()=>player.toggle()})[b.dataset.a]();
+  if(b.dataset.mode)player.setMode(b.dataset.mode);
+  if(b.dataset.speed)player.setSpeed(+b.dataset.speed);
+  if(b.dataset.tog){const k=b.dataset.tog;
+   if(k==='outline')player.setOutline(!player.showOutline);
+   if(k==='grid')player.setGrid(!player.showGrid);
+   if(k==='direction')player.setDirection(!player.showDirection);}
+  const f=e.target.closest('.sp-frame'); if(f)player.goTo(+f.dataset.f);
+ });
+ let built=false;
+ const render=st=>{
+  q('[data-pp]').textContent=st.playing?'⏸':'▶';
+  q('[data-count]').textContent=st.failed?'—':`Nét ${Math.max(0,st.current+1)}/${st.total}`;
+  host.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===st.mode));
+  host.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('on',+b.dataset.speed===st.speed));
+  host.querySelectorAll('[data-tog]').forEach(b=>b.classList.toggle('on',
+   b.dataset.tog==='outline'?st.showOutline:b.dataset.tog==='grid'?st.showGrid:st.showDirection));
+  const info=q('[data-info]');
+  if(st.failed){info.innerHTML='<div style="font-size:13px;color:var(--ink2)">Không có dữ liệu nét để hiển thị.</div>';}
+  else if(st.stroke){
+   const s=st.stroke;
+   info.innerHTML=`<div class="sp-info-head">
+     ${st.playing?'<span class="sp-badge"><i></i>đang viết</span>':'<span class="sp-badge" style="color:var(--ink3)">nét thứ '+(st.current+1)+'</span>'}
+     <b class="zh" style="font-size:20px">${esc(s.zh)}</b><span class="pinyin" style="font-size:14px">${esc(s.py)}</span>
+     <b style="font-size:14px">${esc(s.vi)}</b></div>
+    <div style="font-size:13px;color:var(--ink2);margin-top:5px">${esc(s.rule)}</div>
+    ${s.hook?'<div style="font-size:12.5px;color:var(--warn);margin-top:4px">Nét này có MÓC ở cuối — nhớ hất ngược lại một chút trước khi nhấc bút.</div>':''}`;
+  }else{
+   info.innerHTML=`<div style="font-size:13px;color:var(--ink2)">Chữ có <b>${st.total}</b> nét. Bấm ▶ để xem viết từng nét, hoặc ▶| để đi từng bước một.</div>`;
+  }
+  if(strip&&!st.failed){
+   if(!built&&player.strokes.length){strip.innerHTML=stripHTML(player.strokes,st.current);built=true;}
+   else strip.querySelectorAll('.sp-frame').forEach((f,i)=>{
+    const cur=i===st.current; f.classList.toggle('cur',cur);
+    if(cur&&f.scrollIntoView)f.scrollIntoView({block:'nearest',inline:'nearest'});
+   });
+  }
+ };
+ player.onChange=render; render(player.state());
+ return {render};
+}
+/* =====================================================================
+   7. Hàm tiện dụng: gắn player + controls vào 1 khối
+   ===================================================================== */
+const _players=[];
+function destroyPlayers(){_players.forEach(p=>{try{p.destroy()}catch(e){}});_players.length=0;}
+function mountPlayer(stageEl,ctlEl,ch,opts={}){
+ const p=new HanziStrokePlayer(stageEl,opts);
+ _players.push(p);
+ if(ctlEl)StrokeControls(ctlEl,p,opts);
+ p.load(ch).then(ok=>{if(ok&&opts.autoplay!==false)setTimeout(()=>p.play(),260);});
+ return p;
+}
+</script>
+<script>
+/* =====================================================================
+   QUIZ LAYER — chỉ dùng thư viện HanziWriter cho việc CHẤM NÉT khi tự viết
+   (phần animation thứ tự nét do HanziStrokePlayer tự render, xem file sau)
+   ===================================================================== */
 let HWstate='idle', HWpromise=null;
 function loadHW(){
  if(HWpromise)return HWpromise;
@@ -5415,185 +6475,60 @@ function loadHW(){
  return HWpromise;
 }
 function tok(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#B93A2B'}
-const HWOPT=()=>({width:200,height:200,padding:6,showOutline:true,showCharacter:false,
- strokeAnimationSpeed:1,delayBetweenStrokes:280,delayBetweenLoops:1400,
- strokeColor:tok('--accent'),outlineColor:tok('--border2'),radicalColor:tok('--mfg'),
- drawingColor:tok('--accent'),drawingWidth:22,highlightColor:tok('--good')});
+const HWPAD=10;
+const HWOPT=(size,outline)=>({width:size,height:size,padding:HWPAD,showOutline:outline!==false,showCharacter:false,
+ strokeColor:tok('--hz-ink'),outlineColor:tok('--border2'),radicalColor:tok('--hz-ink'),
+ drawingColor:tok('--hz-red'),drawingWidth:24,highlightColor:tok('--good'),
+ strokeAnimationSpeed:1,delayBetweenStrokes:220});
 const _writers=[];
-function clearWriters(){_writers.forEach(w=>{try{w.hideCharacter&&w.cancelQuiz&&w.cancelQuiz()}catch(e){}});_writers.length=0;}
-/* Tạo 1 ô viết chữ. mode: 'anim' | 'quiz' */
-function mountHZ(box,ch,mode,cb){
- box.innerHTML='<div style="display:grid;place-items:center;height:100%;color:var(--ink3);font-size:12px">Đang tải…</div>';
+function clearWriters(){_writers.forEach(w=>{try{w.cancelQuiz&&w.cancelQuiz()}catch(e){}});_writers.length=0;}
+
+/* Ô tự viết có chấm nét — escalation: sai 1 nhắc lại · sai 2 hiện điểm đặt bút · sai 3 gợi ý nét */
+function mountQuiz(box,ch,opts,cb){
+ opts=opts||{};
+ box.innerHTML=`<div class="sp-fallback" style="color:var(--ink3);font-size:12px">Đang tải…</div>`;
  loadHW().then(()=>{
-  box.innerHTML='<div class="hz-grid"></div>';
-  const w=HanziWriter.create(box,ch,HWOPT());
+  box.innerHTML='';
+  box.insertAdjacentHTML('afterbegin',`<svg class="hzq-grid" viewBox="0 0 1024 1024" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">${HanziWritingGrid(true)}</svg>`);
+  const size=box.clientWidth||220;
+  const w=HanziWriter.create(box,ch,Object.assign(HWOPT(size,opts.outline),{showHintAfterMisses:3}));
   _writers.push(w);
-  if(mode==='quiz'){
-   let mistakes=0;
-   w.quiz({showHintAfterMisses:2,
-    onMistake:()=>{mistakes++;if(cb)cb('mistake',mistakes);},
-    onComplete:d=>{if(cb)cb('done',d.totalMistakes);}});
-  }else{
-   w.loopCharacterAnimation();
-  }
-  if(cb)cb('ready',w);
+  let miss=0;
+  w.quiz({
+   showHintAfterMisses:3,
+   onMistake:d=>{
+    miss++;
+    if(miss===2)showStartDot(box,ch,d.strokeNum,size);
+    cb&&cb('mistake',{n:miss,strokeNum:d.strokeNum,onStroke:d.mistakesOnStroke});
+   },
+   onCorrectStroke:d=>{hideStartDot(box);cb&&cb('stroke',d);},
+   onComplete:d=>{hideStartDot(box);cb&&cb('done',d.totalMistakes);}
+  });
+  cb&&cb('ready',w);
  }).catch(()=>{
-  const w=box.clientWidth||120, big=w>130;
-  box.innerHTML=`<div class="hz-fallback"><div style="font-family:'Noto Serif SC',serif;font-weight:900;line-height:1;font-size:${Math.max(22,Math.round(w*0.42))}px">${esc(ch)}</div>${big?'<div style="font-size:10px;color:var(--ink3);margin-top:6px">cần internet để xem nét</div>':''}</div>`;
-  if(cb)cb('fail');
-  if(!window._hwWarned){window._hwWarned=true;
-   if(currentView==='write')setTimeout(()=>{const v=$('#view-write');if(v)RENDER.write(v);},60);}
+  const w=box.clientWidth||140;
+  box.innerHTML=`<div class="sp-fallback"><div><div style="font-family:'Noto Serif SC',serif;font-weight:900;line-height:1;font-size:${Math.max(22,Math.round(w*0.42))}px">${esc(ch)}</div>
+   <div style="font-size:10px;color:var(--ink3);margin-top:6px">cần internet để chấm nét</div></div></div>`;
+  cb&&cb('fail');
  });
 }
-/* ================= CHI TIẾT MỘT CHỮ ================= */
-window.openChar=ch=>{
- const info=HV[ch]||{p:'',hv:'—',m:''};
- const words=(CHARWORDS[ch]||[]).slice(0,10).map(id=>VMAP[id]).filter(Boolean);
- const rad=RADICALS.find(r=>r[5].split(' ').includes(ch));
- const okMark=S.write&&S.write.ok&&S.write.ok[ch];
- $('#modalBox').innerHTML=`
-  <button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
-  <div style="display:flex;gap:18px;flex-wrap:wrap">
-   <div style="flex:0 0 200px;max-width:200px">
-     <div class="hz-box" id="hzMain"></div>
-     <div class="hz-tools">
-      <button class="btn btn-sm" onclick="HZACT('anim')">▶ Xem lại</button>
-      <button class="btn btn-sm" onclick="HZACT('slow')">🐢 Chậm</button>
-      <button class="btn btn-sm btn-primary" onclick="HZACT('quiz')">✍ Tự viết thử</button>
-     </div>
-     <div id="hzMsg" style="font-size:12px;text-align:center;margin-top:8px;min-height:18px;color:var(--ink3)">${okMark?'<span style="color:var(--good);font-weight:700">✓ Bạn đã viết đúng chữ này</span>':''}</div>
-   </div>
-   <div style="flex:1;min-width:220px">
-    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-     <span class="zh" style="font-size:34px;font-weight:900">${esc(ch)}</span>
-     <span class="pinyin" style="font-size:16px">${esc(info.p)}</span>
-     ${spkBtn(ch)}
-    </div>
-    <div style="margin-top:6px"><span class="chip chip-nego" style="font-size:13px;letter-spacing:.04em">âm Hán Việt: ${esc(info.hv)}</span>
-    <span id="hzCount" class="chip chip-core"></span></div>
-    <div style="font-size:13.5px;color:var(--ink2);margin-top:8px">Nghĩa gốc: <b style="color:var(--ink)">${esc(info.m||'—')}</b></div>
-    ${rad?`<div class="mrow"><b>Bộ thủ</b><div><span class="zh" style="font-size:18px">${esc(rad[0])}</span> ${esc(rad[1])} · <b>${esc(rad[2])}</b> — ${esc(rad[3])}<div style="font-size:12.5px;color:var(--ink2);margin-top:2px">${esc(rad[4])}</div></div></div>`:''}
-    ${words.length?`<div class="mrow"><b>Từ dùng chữ này</b><div>${words.map(w=>`<span class="rel-chip" onclick="closeModal();openVocab('${w.id}')">${esc(w.h)} <span style="color:var(--ink3);font-size:11px">${esc(w.v)}</span></span>`).join('')}</div></div>`:''}
-    <div class="mrow"><b>Mẹo nhớ</b><div style="font-size:13px">Người Việt có lợi thế lớn: âm Hán Việt <b>${esc(info.hv)}</b> chính là "cầu nối" — gặp chữ này trong từ mới, hãy đọc thầm âm Hán Việt trước, nghĩa sẽ hiện ra ngay.</div></div>
-   </div>
-  </div>`;
- $('#modalScrim').classList.add('show');
- const box=$('#hzMain');
- window.HZACT=act=>{
-  const msg=$('#hzMsg');
-  if(act==='quiz'){
-   msg.innerHTML='Dùng chuột/ngón tay viết theo đúng thứ tự nét…';
-   mountHZ(box,ch,'quiz',(ev,val)=>{
-    if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Sai nét ${val} lần — sai 2 lần sẽ có gợi ý</span>`;
-    if(ev==='done'){
-     S.write=S.write||{ok:{},tries:{}};S.write.tries[ch]=(S.write.tries[ch]||0)+1;
-     if(val===0){S.write.ok[ch]=true;addXP(3);msg.innerHTML='<span style="color:var(--good);font-weight:700">✓ Hoàn hảo! Không sai nét nào.</span>';}
-     else msg.innerHTML=`<span style="color:var(--warn)">Xong — sai ${val} nét. Viết lại cho tới khi không sai nét nào nhé.</span>`;
-     save();
-    }
-   });
-  }else{
-   msg.innerHTML=act==='slow'?'Đang chạy chậm để bạn nhìn rõ từng nét':'';
-   if(act==='slow'){
-    box.innerHTML='<div style="display:grid;place-items:center;height:100%;color:var(--ink3);font-size:12px">Đang tải…</div>';
-    loadHW().then(()=>{box.innerHTML='<div class="hz-grid"></div>';
-     const w=HanziWriter.create(box,ch,Object.assign(HWOPT(),{strokeAnimationSpeed:0.3,delayBetweenStrokes:950}));
-     _writers.push(w);w.loopCharacterAnimation();}).catch(()=>mountHZ(box,ch,'anim'));
-   }else mountHZ(box,ch,'anim');
-  }
- };
- HZACT('anim');
- loadHW().then(()=>HanziWriter.loadCharacterData(ch)).then(d=>{
-  const el=$('#hzCount');if(el&&d&&d.strokes)el.textContent=d.strokes.length+' nét';
+/* chấm đỏ báo vị trí đặt bút của nét đang cần viết (lấy từ dữ liệu median) */
+function showStartDot(box,ch,strokeNum,size){
+ charData(ch).then(d=>{
+  const m=d.medians[strokeNum]; if(!m)return;
+  const s=(size-2*HWPAD)/1024;
+  const x=HWPAD+m[0][0]*s, y=HWPAD+(900-m[0][1])*s;
+  hideStartDot(box);
+  const dot=document.createElement('div');
+  dot.className='hzq-dot'; dot.style.left=x+'px'; dot.style.top=y+'px';
+  dot.setAttribute('aria-hidden','true');
+  box.appendChild(dot);
  }).catch(()=>{});
-};
-/* ================= VIEW: VIẾT CHỮ HÁN ================= */
-const WTABS=[['basics','Nét & quy tắc','笔顺'],['radical','Bộ thủ','部首'],['lookup','Tra chữ','查字'],['practice','Luyện viết','练字']];
-RENDER.write=(el,param)=>{
- clearWriters();
- if(typeof param==='string')el._tab=param;
- const tab=el._tab||'basics';
- const okN=Object.keys((S.write&&S.write.ok)||{}).length;
- let body='';
- if(tab==='basics')body=writeBasicsHTML();
- if(tab==='radical')body=writeRadicalHTML();
- if(tab==='lookup')body=writeLookupHTML(el);
- if(tab==='practice')body=writePracticeHTML(el);
- el.innerHTML=pageHead('Writing System · 书写','书','Cách viết từng chữ Hán',
-  'Viết tay đúng bút thuận không chỉ để chữ đẹp: nó giúp bạn NHỚ chữ lâu hơn nhiều lần, đọc được chữ viết tay của đồng nghiệp Trung Quốc, và tra được từ điển. Kho chữ: '+ALLCHARS.length+' chữ Hán trong toàn bộ từ vựng — mỗi chữ có video nét viết, số nét, âm Hán Việt và ô tập viết.')+
- `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-   <div class="toggle-row" style="margin:0">${WTABS.map(t=>`<button class="toggle ${tab===t[0]?'on':''}" onclick="GO('write','${t[0]}')">${t[1]} <span class="zh" style="opacity:.6">${t[2]}</span></button>`).join('')}</div>
-   <span class="chip chip-good num" style="margin-left:auto">✍ Đã viết đúng ${okN}/${ALLCHARS.length} chữ</span>
-  </div>${body}`;
- if(tab==='basics')mountBasics();
- if(tab==='radical')mountRadicals();
- if(tab==='lookup')mountLookup(el);
- if(tab==='practice')mountPractice(el);
-};
-function hwWarn(){return HWstate==='fail'?`<div class="hz-warn">⚠ Không tải được thư viện nét chữ (cần kết nối internet). Bạn vẫn xem được quy tắc bút thuận, bộ thủ và âm Hán Việt bên dưới — phần video nét viết sẽ hoạt động lại khi có mạng.</div>`:''}
-
-function writeBasicsHTML(){
- return hwWarn()+
- `<div class="card card-pad" style="border-left:4px solid var(--accent);margin-bottom:18px">
-   <b>Vì sao người Việt nên học viết chữ Hán?</b>
-   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">
-   ① <b>Nhớ lâu hơn</b> — tay viết một lần bằng mắt nhìn năm lần. ② <b>Đọc được chữ viết tay</b> của quản lý Trung Quốc trên phiếu giao ca, bản vẽ, ghi chú. ③ <b>Ký và điền biểu mẫu</b> — 签字, 填表 là việc hằng ngày. ④ <b>Phân biệt chữ gần giống</b>: 木/本, 目/日, 白/百, 千/干 — chỉ khi tự viết bạn mới không lẫn.</div></div>
-  <div class="section-label">8 nét cơ bản · 基本笔画</div>
-  <div class="grid g2">${STROKES.map((s,i)=>`
-   <div class="card card-pad">
-    <div class="stroke-demo">
-     <div class="stroke-glyph">${esc(s[0])}</div>
-     <div style="flex:1;min-width:150px">
-      <b class="zh" style="font-size:16px">${esc(s[1])}</b> <span class="pinyin">${esc(s[2])}</span>
-      <div style="font-weight:700;font-size:13.5px">${esc(s[3])}</div>
-      <div style="font-size:12.5px;color:var(--ink2);margin-top:3px">${esc(s[4])}</div>
-      <div style="font-size:12.5px;margin-top:5px">Chữ có nét này: <span class="zh" style="font-size:15px">${esc(s[5])}</span></div>
-     </div>
-     <div class="hz-box" style="width:96px;height:96px;flex-shrink:0" data-hz="${esc(s[5].split(' ')[0])}"></div>
-    </div></div>`).join('')}</div>
-  <div class="section-label">7 quy tắc bút thuận · 笔顺规则</div>
-  <div class="grid g2">${SRULES.map((r,i)=>`
-   <div class="card card-pad">
-    <div style="display:flex;gap:12px;align-items:flex-start">
-     <div class="rule-num num">${i+1}</div>
-     <div style="flex:1">
-      <b class="zh" style="font-size:16px">${esc(r[0])}</b> <span class="pinyin">${esc(r[1])}</span>
-      <div style="font-weight:700;font-size:14px;color:var(--accent-ink)">${esc(r[2])}</div>
-      <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc(r[3])}</div>
-      <div style="font-size:13px;margin-top:6px">Ví dụ: <span class="zh" style="font-size:17px">${esc(r[4])}</span></div>
-     </div>
-     <div class="hz-box" style="width:110px;height:110px;flex-shrink:0" data-hz="${esc(r[5])}"></div>
-    </div></div>`).join('')}</div>
-  <div class="card card-pad" style="margin-top:16px;font-size:13px;color:var(--ink2)">
-   <b>Mẹo luyện tay:</b> viết mỗi chữ mới 5 lần trên giấy ô ly (田字格) ngay khi học từ đó — nhiều hơn 5 lần là phí thời gian, ít hơn thì không đọng lại. Sau đó dùng ô <b>✍ Tự viết thử</b> trong app để kiểm tra thứ tự nét.</div>`;
 }
-function mountBasics(){document.querySelectorAll('#view-write .hz-box[data-hz]').forEach(b=>mountHZ(b,b.dataset.hz,'anim'));}
+function hideStartDot(box){const d=box.querySelector('.hzq-dot');if(d)d.remove();}
 
-function writeRadicalHTML(){
- return hwWarn()+
- `<div class="card card-pad" style="border-left:4px solid var(--mfg);margin-bottom:18px">
-   <b>Bộ thủ = "gốc nghĩa" của chữ Hán</b>
-   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Mỗi chữ Hán thường gồm <b>bộ thủ</b> (gợi ý nghĩa) + <b>phần âm</b> (gợi ý cách đọc). Biết bộ thủ, bạn đoán được nghĩa của chữ chưa từng gặp: thấy 贝 → chắc chắn liên quan đến tiền (货 hàng, 费 phí, 账 tài khoản); thấy 扌 → liên quan đến tay (搬 khuân, 擦 lau, 插 cắm). Đây là cách nhớ chữ nhanh nhất — nhanh hơn học vẹt rất nhiều.</div></div>
-  <div class="grid g2">${RADICALS.map(r=>{
-   const chars=r[5].split(' ').filter(c=>CHARFREQ[c]).slice(0,8);
-   const words=[];
-   chars.forEach(c=>{(CHARWORDS[c]||[]).slice(0,1).forEach(id=>{const w=VMAP[id];if(w&&words.length<4&&!words.find(x=>x.id===w.id))words.push(w);})});
-   return `<div class="card card-pad">
-    <div style="display:flex;gap:12px;align-items:flex-start">
-     <div class="hz-box" style="width:88px;height:88px;flex-shrink:0" data-hz="${esc(chars[0]||r[0])}"></div>
-     <div style="flex:1">
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-       <span class="zh" style="font-size:26px;font-weight:900">${esc(r[0])}</span>
-       <span style="font-weight:700">${esc(r[1])}</span>
-       <span class="chip chip-nego">${esc(r[2])}</span></div>
-      <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc(r[4])}</div>
-      <div style="margin-top:8px;font-size:12px;color:var(--ink3)">Chữ mang bộ này trong kho từ:</div>
-      <div style="margin-top:4px">${chars.map(c=>`<button class="hz-mini" onclick="openChar('${c}')"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}</div>
-      ${words.length?`<div style="margin-top:8px;font-size:12.5px;color:var(--ink2)">Từ dùng: ${words.map(w=>`<span class="rel-chip" onclick="openVocab('${w.id}')">${esc(w.h)}</span>`).join('')}</div>`:''}
-     </div></div></div>`}).join('')}</div>`;
-}
-function mountRadicals(){document.querySelectorAll('#view-write .hz-box[data-hz]').forEach(b=>mountHZ(b,b.dataset.hz,'anim'));}
-
+/* ===== TRA CHỮ (giữ nguyên, dùng chung cho module mới) ===== */
+function hwWarn(){return CHDATA_FAIL?`<div class="hz-warn">⚠ Không tải được dữ liệu thứ tự nét (cần kết nối internet). Bạn vẫn học được cấu tạo chữ, bộ thủ, âm Hán Việt và nghĩa — phần nét viết sẽ hoạt động lại khi có mạng.</div>`:''}
 function writeLookupHTML(el){
  const f=el._lf||{q:'',ind:'all',lv:0};el._lf=f;
  let cs=ALLCHARS;
@@ -5609,24 +6544,443 @@ function writeLookupHTML(el){
   </div>
   <div style="font-size:12.5px;color:var(--ink3);margin-bottom:10px" class="num">${cs.length} chữ${cs.length>240?' · hiển thị 240 chữ đầu, hãy dùng ô tìm kiếm':''}</div>
   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">
-   ${shown.map(c=>{const i=HV[c]||{};const ok=S.write&&S.write.ok&&S.write.ok[c];
+   ${shown.map(c=>{const i=HV[c]||{};const m=wMastery(c);
     return `<div class="card hz-card" onclick="openChar('${c}')" title="${esc(i.m||'')}">
      <div class="hz-char">${esc(c)}</div>
      <div class="pinyin" style="font-size:11.5px">${esc(i.p||'')}</div>
      <div class="hz-hv">${esc(i.hv||'—')}</div>
-     <div style="font-size:10.5px;color:var(--ink3);margin-top:2px">${ok?'<span style="color:var(--good)">✓ đã viết đúng</span>':(CHARFREQ[c]+' từ')}</div>
+     <div style="font-size:10px;margin-top:3px;color:${m.color}">${m.lv?m.name:(CHARFREQ[c]+' từ')}</div>
     </div>`}).join('')||'<div class="empty">Không tìm thấy chữ phù hợp.</div>'}
   </div>`;
 }
-function mountLookup(){}
 window.WLI=i=>{const el=$('#view-write');el._lf.ind=i;RENDER.write(el,'lookup')};
 window.WLL=l=>{const el=$('#view-write');el._lf.lv=l;RENDER.write(el,'lookup')};
 let _wlq;window.WLQ=v=>{clearTimeout(_wlq);_wlq=setTimeout(()=>{const el=$('#view-write');el._lf.q=v;RENDER.write(el,'lookup');const inp=el.querySelector('.vsearch');if(inp){inp.focus();inp.setSelectionRange(v.length,v.length);}},260)};
+</script>
+<style>
+.hzq-dot{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:99px;background:var(--hz-red);box-shadow:0 0 0 6px rgba(200,53,42,.18);pointer-events:none;animation:hzpulse2 .9s ease-in-out infinite}
+@keyframes hzpulse2{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+.cl-steps{display:flex;gap:5px;overflow-x:auto;padding:2px 0 12px}
+.cl-step{flex:0 0 auto;padding:6px 11px;border-radius:99px;font-size:11.5px;font-weight:700;border:1px solid var(--border2);color:var(--ink3);white-space:nowrap}
+.cl-step.done{background:var(--good-soft);color:var(--good);border-color:transparent}
+.cl-step.now{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.cl-bridge{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed var(--border);flex-wrap:wrap}
+.cl-hv{font-weight:800;letter-spacing:.05em;color:var(--accent-ink)}
+.mstr{display:inline-flex;gap:3px;align-items:center}
+.mstr i{width:7px;height:7px;border-radius:99px;background:var(--border2)}
+.trap-row{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--border);font-size:13px;align-items:baseline;flex-wrap:wrap}
+</style>
+<script>
+/* =====================================================================
+   MASTERY & SRS CHO CHỮ VIẾT  (tách Accuracy khỏi Mastery)
+   S.write.ok[ch]   = đã từng viết đúng 100% (ACCURACY)
+   S.write.m[ch]    = {lv, due}  cấp ghi nhớ (MASTERY) — giảm dần hỗ trợ
+   ===================================================================== */
+function wInit(){S.write=S.write||{};S.write.ok=S.write.ok||{};S.write.tries=S.write.tries||{};S.write.m=S.write.m||{};}
+wInit();
+function wMastery(ch){
+ const r=S.write.m[ch];const lv=r?r.lv:0;
+ return {lv,name:MASTERY[Math.min(lv,6)][0],color:MASTERY[Math.min(lv,6)][1],due:r?r.due:0,
+  next:lv>0&&lv<=WLV.length?WLV[Math.min(lv,WLV.length-1)]:null};
+}
+function wPromote(ch,ok){
+ wInit();
+ const r=S.write.m[ch]||{lv:0,due:0};
+ if(ok){r.lv=Math.min(6,r.lv+1);const L=WLV[Math.min(r.lv-1,WLV.length-1)];r.due=Date.now()+L.iv;}
+ else{r.lv=Math.max(1,r.lv-1);r.due=Date.now()+10*60e3;}
+ S.write.m[ch]=r;save();
+ return r;
+}
+function wDue(){wInit();return Object.keys(S.write.m).filter(c=>S.write.m[c].due<=Date.now()&&S.write.m[c].lv<6);}
+function wStats(){wInit();const m=S.write.m;const k=Object.keys(m);
+ return {total:k.length,due:wDue().length,mastered:k.filter(c=>m[c].lv>=6).length,ok:Object.keys(S.write.ok).length};}
+function mstrDots(lv){return `<span class="mstr">${[1,2,3,4,5,6].map(i=>`<i style="${i<=lv?'background:'+MASTERY[Math.min(lv,6)][1]:''}"></i>`).join('')}</span>`;}
 
-/* ===== LUYỆN VIẾT ===== */
+/* ===== tìm ngữ cảnh thật cho một chữ: từ / câu / hội thoại ===== */
+function charContext(ch){
+ const words=(CHARWORDS[ch]||[]).map(id=>VMAP[id]).filter(Boolean);
+ const sents=SENTENCES.filter(s=>s[0].includes(ch)).slice(0,4);
+ let dlg=null;
+ for(const d of DIALOGUES){const L=d.lines.find(x=>x[1].includes(ch));if(L){dlg={d,L};break;}}
+ return {words,sents,dlg};
+}
+/* ===== phân tích cấu tạo ===== */
+function charParts(ch){
+ const dec=DECOMP[ch];
+ const comps=COMPONENTS.filter(c=>c.chars&&c.chars.split(' ').includes(ch));
+ const rad=comps.find(c=>c.role==='radical')||comps[0]||null;
+ return {dec,comps,rad};
+}
+function partsHTML(ch){
+ const {dec,comps,rad}=charParts(ch);
+ if(!dec&&!comps.length)return `<div style="font-size:13px;color:var(--ink2)">Chữ này chưa có phân tích cấu tạo trong kho — hãy tập trung vào thứ tự nét và âm Hán Việt.</div>`;
+ return `${dec?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+   <span class="zh" style="font-size:30px;font-weight:900">${esc(ch)}</span>
+   <span style="color:var(--ink3);font-size:20px">=</span>
+   ${dec.parts.split('+').map(p=>`<span class="zh" style="font-size:24px;padding:4px 10px;border:1px solid var(--border2);border-radius:10px">${esc(p)}</span>`).join('<span style="color:var(--ink3)">+</span>')}
+  </div>${dec.why?`<div style="font-size:13px;color:var(--ink2);margin-top:8px">${esc(dec.why)}</div>`:''}`:''}
+ ${rad?`<div class="cl-bridge" style="margin-top:10px">
+   <span class="zh" style="font-size:22px">${esc(rad.g)}</span>
+   <div style="flex:1;min-width:180px"><b>${esc(rad.n)}</b> · <span class="cl-hv">${esc(rad.hv)}</span> — ${esc(rad.m)}
+   <div style="font-size:12.5px;color:var(--ink2);margin-top:2px">${esc(rad.note)}</div></div>
+   <span class="chip ${rad.role==='radical'?'chip-mfg':'chip-core'}">${rad.role==='radical'?'thành phần gợi NGHĨA':'thành phần cấu tạo'}</span>
+  </div>`:''}
+ ${comps.filter(c=>c!==rad).map(c=>`<div class="cl-bridge"><span class="zh" style="font-size:20px">${esc(c.g)}</span>
+   <div style="flex:1;min-width:180px"><b>${esc(c.n)}</b> · <span class="cl-hv">${esc(c.hv)}</span> — ${esc(c.m)}</div>
+   <span class="chip chip-core">${c.role==='radical'?'gợi nghĩa':'gợi âm / hình'}</span></div>`).join('')}`;
+}
+/* ===== cầu nối Hán Việt (KHÔNG phải bản dịch) ===== */
+function bridgeHTML(ch){
+ const info=HV[ch]||{};
+ const words=(CHARWORDS[ch]||[]).map(id=>VMAP[id]).filter(Boolean).slice(0,6);
+ return `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+   <span class="zh" style="font-size:30px;font-weight:900">${esc(ch)}</span><span style="color:var(--ink3)">→</span>
+   <span class="cl-hv" style="font-size:22px">${esc(info.hv||'—')}</span></div>
+  <div style="font-size:13px;color:var(--ink2);margin-top:6px">Nghĩa gốc gợi nhớ: <b style="color:var(--ink)">${esc(info.m||'—')}</b></div>
+  <div style="margin-top:10px">${words.map(w=>`<div class="cl-bridge">
+    <span class="zh" style="font-size:18px;min-width:74px">${esc(w.h)}</span>
+    <span class="cl-hv" style="font-size:12.5px;min-width:110px">${[...w.h].map(c=>(HV[c]||{}).hv||'?').join(' ')}</span>
+    <span style="color:var(--ink3)">→</span>
+    <span style="font-size:13.5px;flex:1">${esc(w.v)}</span>
+    <button class="btn btn-sm btn-ghost" onclick="closeModal();openVocab('${w.id}')">mở từ</button></div>`).join('')}</div>
+  <div class="hz-warn" style="margin-top:12px;background:var(--warn-soft)">⚠ Âm Hán Việt là <b>cầu nối trí nhớ</b>, KHÔNG phải bản dịch. Ví dụ 经理 đọc Hán Việt là "KINH LÝ" nhưng nghĩa hiện đại là <b>giám đốc / quản lý</b>. Luôn đối chiếu nghĩa thật của từ.</div>`;
+}
+/* =====================================================================
+   CHARACTER LESSON — 7 bước: Nhìn → Cấu tạo → Hán Việt → Bút thuận
+                              → Viết theo mẫu → Tự viết → Recall
+   ===================================================================== */
+const CLSTEPS=['Quan sát','Cấu tạo','Hán Việt','Thứ tự nét','Viết theo mẫu','Tự viết','Nhớ lại'];
+let CL=null;
+window.openCharLesson=(ch,startAt)=>{
+ destroyPlayers();
+ CL={ch,i:startAt||0,ctx:charContext(ch),wordIdx:0,mistakes:0};
+ drawCL();
+};
+function clNav(){
+ const i=CL.i;
+ return `<div class="lesson-nav">
+  <button class="btn" ${i===0?'disabled':''} onclick="CLGO(${i-1})">← Trước</button>
+  <button class="btn btn-primary" ${i===6?'style="display:none"':''} onclick="CLGO(${i+1})">Bước tiếp →</button>
+ </div>`;
+}
+window.CLGO=i=>{destroyPlayers();CL.i=Math.max(0,Math.min(6,i));CL.mistakes=0;drawCL();};
+function drawCL(){
+ const {ch,i,ctx}=CL, info=HV[ch]||{}, m=wMastery(ch);
+ let body='';
+ if(i===0){
+  body=`<div class="sp-wrap">
+   <div class="sp-stage"><div class="hzg"><svg viewBox="0 0 1024 1024">${HanziWritingGrid(true)}
+     <text x="512" y="512" text-anchor="middle" dominant-baseline="central" font-family="Noto Serif SC, serif" font-weight="900" font-size="620" fill="var(--hz-ink)">${esc(ch)}</text></svg></div></div>
+   <div class="sp-side">
+    <div class="sp-info"><b>Bước 1 — Nhìn kỹ trước khi học</b>
+     <div style="font-size:13.5px;color:var(--ink2);margin-top:8px;line-height:1.7">Đừng vội xem animation. Hãy nhìn chữ <b>${esc(ch)}</b> trong ô 米字格 khoảng 5 giây và tự trả lời:
+      <div style="margin-top:8px">• Chữ này gồm mấy phần? Trái–phải hay trên–dưới?<br>• Phần nào bạn đã gặp ở chữ khác?<br>• Nét nào dài nhất, nằm ở đâu trong ô vuông?</div></div>
+     <div style="font-size:12.5px;color:var(--ink3);margin-top:10px">Bước quan sát này khiến não ghi nhớ hình chữ tốt hơn nhiều so với xem thụ động.</div></div>
+    ${clNav()}</div></div>`;
+ }
+ if(i===1)body=`<div class="sp-info">${partsHTML(ch)}</div>${clNav()}`;
+ if(i===2)body=`<div class="sp-info">${bridgeHTML(ch)}</div>${clNav()}`;
+ if(i===3){
+  body=`<div class="sp-wrap"><div class="sp-stage"><div id="clStage"></div></div>
+   <div class="sp-side"><div id="clCtl"></div>${clNav()}</div></div>`;
+ }
+ if(i===4||i===5){
+  const guided=i===4;
+  body=`<div class="sp-wrap"><div class="sp-stage">
+    <div class="hzg" id="clQuiz" style="position:relative"></div>
+    <div class="sp-ctl"><button class="sp-btn" onclick="CLQ()" aria-label="Viết lại">↻ Viết lại</button>
+     ${guided?'':'<button class="sp-btn" onclick="CLGO(3)" aria-label="Xem lại nét">👁 Xem lại nét</button>'}</div></div>
+   <div class="sp-side"><div class="sp-info">
+     <b>Bước ${i+1} — ${guided?'Viết theo mẫu (描红)':'Tự viết, không có mẫu (默写)'}</b>
+     <div style="font-size:13.5px;color:var(--ink2);margin-top:6px">${guided
+      ?'Nét mờ dẫn đường vẫn hiện. Dùng chuột hoặc ngón tay viết theo đúng THỨ TỰ nét. Sai 2 lần sẽ có chấm đỏ báo điểm đặt bút, sai 3 lần mới gợi ý cả nét.'
+      :'Không còn nét mẫu. Viết hoàn toàn từ trí nhớ — đây mới là lúc kiểm tra bạn có thực sự nhớ chữ hay chỉ bắt chước animation.'}</div>
+     <div id="clMsg" style="margin-top:10px;font-size:13px;min-height:40px;color:var(--ink3)"></div></div>${clNav()}</div></div>`;
+ }
+ if(i===6){
+  const w=ctx.words[CL.wordIdx%Math.max(1,ctx.words.length)];
+  if(!w)body=`<div class="sp-info">Chữ này chưa có từ đi kèm trong kho — bạn đã hoàn thành phần viết.</div>${clFinish()}`;
+  else body=`<div class="sp-info" style="margin-bottom:14px">
+    <b>Bước 7 — Nhớ lại trong ngữ cảnh công việc</b>
+    <div style="font-size:13.5px;color:var(--ink2);margin-top:6px">Không nhìn chữ mẫu. Từ nghĩa và âm đọc dưới đây, hãy viết lại <b>cả từ</b>:</div>
+    <div style="margin-top:12px;text-align:center">
+     <div class="pinyin" style="font-size:20px">${esc(w.p)}</div>
+     <div class="cl-hv" style="font-size:15px;margin-top:2px">${[...w.h].map(c=>(HV[c]||{}).hv||'?').join(' – ')}</div>
+     <div style="font-size:16px;font-weight:700;margin-top:4px">${esc(w.v)}</div>
+     ${w.ex?`<div style="font-size:12.5px;color:var(--ink3);margin-top:6px">Dùng trong câu: ${esc(w.ex[1])}</div>`:''}</div></div>
+   <div id="clRecall" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"></div>
+   <div id="clMsg2" style="text-align:center;margin-top:12px;font-size:13.5px;min-height:24px;color:var(--ink3)"></div>
+   ${clFinish()}`;
+ }
+ $('#modalBox').innerHTML=`<button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
+  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+   <span class="zh" style="font-size:26px;font-weight:900">${esc(ch)}</span>
+   <span class="pinyin">${esc(info.p||'')}</span><span class="cl-hv">${esc(info.hv||'')}</span>
+   <span style="font-size:13px;color:var(--ink2)">${esc(info.m||'')}</span>
+   <span style="margin-left:auto;font-size:11.5px;color:${m.color};font-weight:700">${m.name} ${mstrDots(m.lv)}</span></div>
+  <div class="cl-steps">${CLSTEPS.map((s,k)=>`<button class="cl-step ${k<i?'done':k===i?'now':''}" onclick="CLGO(${k})">${k+1}. ${s}</button>`).join('')}</div>
+  ${body}`;
+ $('#modalScrim').classList.add('show');
+ if(i===3)mountPlayer($('#clStage'),$('#clCtl'),ch,{mode:'all',showDirection:true,
+   cta:`<button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="CLGO(4)">✍ Giờ tự viết chữ này →</button>`});
+ if(i===4||i===5)CLQ();
+ if(i===6)clRecall();
+}
+function clFinish(){
+ return `<div style="text-align:center;margin-top:14px"><button class="btn btn-primary" onclick="CLDONE()">✓ Hoàn thành chữ này</button>
+  <div style="font-size:12px;color:var(--ink3);margin-top:6px">Chữ sẽ quay lại trong Ôn viết theo lịch giãn cách</div></div>`;
+}
+window.CLQ=()=>{
+ const i=CL.i,box=$('#clQuiz'),msg=$('#clMsg');if(!box)return;
+ CL.mistakes=0;
+ mountQuiz(box,CL.ch,{outline:i===4},(ev,d)=>{
+  if(ev==='mistake'){
+   const st=CHDATA[CL.ch];
+   msg.innerHTML=`<span style="color:var(--warn)">Chưa đúng — đang cần <b>nét thứ ${d.strokeNum+1}</b>.
+    ${d.n>=2?'Chấm đỏ là điểm ĐẶT BÚT của nét này.':'Thử lại nhé.'}
+    ${d.n>=3?'<br>Nét mẫu đã được gợi ý — nhưng bạn vẫn phải tự viết lại nét đó.':''}</span>`;
+   charData(CL.ch).then(dt=>{const s=classifyStroke(dt.medians[d.strokeNum]);
+    msg.innerHTML+=`<div style="margin-top:6px;color:var(--ink2)">Nét cần viết: <b class="zh">${esc(s.zh)}</b> ${esc(s.py)} · ${esc(s.vi)} — ${esc(s.rule)}</div>`;}).catch(()=>{});
+  }
+  if(ev==='done'){
+   const perfect=d===0;
+   if(perfect){S.write.ok[CL.ch]=true;addXP(3);save();}
+   msg.innerHTML=perfect
+    ?`<span style="color:var(--good);font-weight:700">✓ Hoàn hảo, không sai nét nào!</span> ${i===4?'Sang bước 6 để tự viết khi KHÔNG có mẫu.':'Bạn đã viết được chữ này từ trí nhớ.'}`
+    :`<span style="color:var(--warn)">Xong — sai ${d} nét. Bấm ↻ viết lại tới khi không sai nét nào.</span>`;
+   if(perfect&&i===4)setTimeout(()=>{if(CL&&CL.i===4)CLGO(5);},1400);
+  }
+ });
+};
+function clRecall(){
+ const w=CL.ctx.words[CL.wordIdx%Math.max(1,CL.ctx.words.length)];if(!w)return;
+ const chars=[...w.h].filter(c=>c>='一'&&c<='鿿');
+ const host=$('#clRecall');
+ host.innerHTML=chars.map((c,k)=>`<div style="width:${Math.min(150,320/chars.length)}px"><div class="hzg" id="clr${k}" style="position:relative"></div>
+  <div style="text-align:center;font-size:11px;color:var(--ink3);margin-top:4px" id="clrs${k}">chữ ${k+1}</div></div>`).join('');
+ let done=0;
+ chars.forEach((c,k)=>{
+  mountQuiz($('#clr'+k),c,{outline:false},(ev,d)=>{
+   if(ev==='done'){
+    $('#clrs'+k).innerHTML=d===0?'<span style="color:var(--good);font-weight:700">✓ đúng</span>':`<span style="color:var(--warn)">sai ${d} nét</span>`;
+    if(d===0){S.write.ok[c]=true;save();}
+    if(++done===chars.length)$('#clMsg2').innerHTML=`<span style="color:var(--good);font-weight:700">Bạn vừa viết trọn từ ${esc(w.h)} — ${esc(w.v)} từ trí nhớ.</span>`;
+   }
+  });
+ });
+}
+window.CLDONE=()=>{
+ wPromote(CL.ch,true);addXP(6);
+ const m=wMastery(CL.ch),L=m.next;
+ toast(`✓ ${CL.ch} · ${m.name}${L?' — ôn lại sau '+L.ivLabel:''}`);
+ closeModal();
+ if(currentView==='write')RENDER.write($('#view-write'));
+};
+/* =====================================================================
+   MODAL CHI TIẾT CHỮ (mặc định) — animation + thông tin + CTA học viết
+   ===================================================================== */
+window.openChar=(ch,ctx)=>{
+ destroyPlayers();
+ const info=HV[ch]||{},m=wMastery(ch),c=charContext(ch),{rad}=charParts(ch);
+ $('#modalBox').innerHTML=`<button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
+  <div class="sp-wrap">
+   <div class="sp-stage"><div id="ocStage"></div><div id="ocCtl"></div></div>
+   <div class="sp-side">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+     <span class="zh" style="font-size:34px;font-weight:900">${esc(ch)}</span>
+     <span class="pinyin" style="font-size:16px">${esc(info.p||'')}</span>${spkBtn(ch)}</div>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+     <span class="chip chip-nego">âm Hán Việt: ${esc(info.hv||'—')}</span>
+     <span class="chip chip-core" id="ocCount">— nét</span>
+     <span style="font-size:11.5px;color:${m.color};font-weight:700">${m.name} ${mstrDots(m.lv)}</span></div>
+    <div style="font-size:13.5px;color:var(--ink2);margin-top:8px">Nghĩa gốc: <b style="color:var(--ink)">${esc(info.m||'—')}</b></div>
+    <div class="mrow"><b>Cấu tạo</b><div>${partsHTML(ch)}</div></div>
+    ${c.words.length?`<div class="mrow"><b>Từ dùng chữ này</b><div>${c.words.slice(0,10).map(w=>`<span class="rel-chip" onclick="closeModal();openVocab('${w.id}')">${esc(w.h)} <span style="color:var(--ink3);font-size:11px">${esc(w.v)}</span></span>`).join('')}</div></div>`:''}
+    ${c.sents.length?`<div class="mrow"><b>Câu công việc</b><div>${c.sents.map(s=>`<div style="padding:5px 0;border-top:1px dashed var(--border)"><div class="zh" style="font-size:14.5px">${esc(s[0])} ${spkBtn(s[0])}</div><div class="vi" style="font-size:12.5px">${esc(s[2])}</div></div>`).join('')}</div></div>`:''}
+    ${c.dlg?`<div class="mrow"><b>Trong hội thoại</b><div><div class="zh" style="font-size:14px">${esc(c.dlg.L[1])}</div><div class="vi" style="font-size:12.5px">${esc(c.dlg.L[3])}</div>
+      <button class="btn btn-sm" style="margin-top:6px" onclick="closeModal();GO('conversations')">Mở hội thoại "${esc(c.dlg.d.title)}" →</button></div></div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+     <button class="btn btn-primary" onclick="openCharLesson('${ch}')">📖 Học viết chữ này (7 bước)</button>
+     <button class="btn" onclick="openCharLesson('${ch}',4)">✍ Tự viết ngay</button></div>
+   </div></div>`;
+ $('#modalScrim').classList.add('show');
+ mountPlayer($('#ocStage'),$('#ocCtl'),ch,{mode:'all',showDirection:false,
+  cta:`<button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="openCharLesson('${ch}',4)">✍ Tự viết chữ này</button>`});
+ charData(ch).then(d=>{const e=$('#ocCount');if(e)e.textContent=d.strokes.length+' nét';}).catch(()=>{});
+};
+</script>
+<script>
+/* dọn player/quiz mỗi khi đổi màn hình hoặc đóng modal */
+const _show0=show;
+show=function(v,p){destroyPlayers();clearWriters();return _show0(v,p);};
+const _closeModal0=window.closeModal;
+window.closeModal=()=>{destroyPlayers();clearWriters();CL=null;_closeModal0();};
+
+/* =====================================================================
+   VIEW: VIẾT CHỮ HÁN — 5 tab
+   ===================================================================== */
+const WTABS=[['player','Thứ tự nét','笔顺'],['basics','Nét & quy tắc','笔画'],['parts','Cấu tạo & bộ thủ','部首'],['lookup','Tra chữ','查字'],['review','Học & ôn viết','练字']];
+const DEMO_CHARS=['人','口','月','边','货','交','期'];
+RENDER.write=(el,param)=>{
+ destroyPlayers();clearWriters();
+ if(typeof param==='string')el._tab=param;
+ const tab=el._tab||'player';
+ const st=wStats();
+ let body='';
+ if(tab==='player')body=wPlayerHTML(el);
+ if(tab==='basics')body=wBasicsHTML(el);
+ if(tab==='parts')body=wPartsHTML();
+ if(tab==='lookup')body=writeLookupHTML(el);
+ if(tab==='review')body=wReviewHTML(el);
+ el.innerHTML=pageHead('Writing System · 书写','书','Cách viết từng chữ Hán',
+  'Xem chữ được viết từng nét đúng thứ tự trong ô 米字格, rồi tự viết lại — app chấm từng nét. '+ALLCHARS.length+' chữ Hán trong kho từ, mỗi chữ có cấu tạo, âm Hán Việt và lịch ôn giãn cách riêng.')+
+ `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+   <div class="toggle-row" style="margin:0">${WTABS.map(t=>`<button class="toggle ${tab===t[0]?'on':''}" onclick="GO('write','${t[0]}')">${t[1]} <span class="zh" style="opacity:.6">${t[2]}</span></button>`).join('')}</div>
+   <span class="chip chip-good num" style="margin-left:auto">✍ viết đúng ${st.ok}</span>
+   ${st.due?`<span class="chip chip-warn num">⏰ ${st.due} chữ đến hạn ôn</span>`:''}
+  </div>${body}`;
+ if(tab==='player')wPlayerMount(el);
+ if(tab==='basics')wBasicsMount(el);
+ if(tab==='parts'||tab==='review')wMountThumbs();
+};
+function wMountThumbs(){}
+
+/* ---------- TAB 1: player + demo ---------- */
+function wPlayerHTML(el){
+ const ch=el._pc||'货';
+ const info=HV[ch]||{};
+ return hwWarn()+
+ `<div class="card card-pad" style="margin-bottom:16px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <b style="font-size:13.5px">Chọn chữ:</b>
+    ${DEMO_CHARS.map(c=>`<button class="hz-mini ${c===ch?'on':''}" style="${c===ch?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="WPC('${c}')"><b>${c}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}
+    <input class="vsearch" style="max-width:220px" placeholder="hoặc gõ 1 chữ Hán bất kỳ…" oninput="WPCIN(this.value)">
+   </div>
+   <div style="font-size:12.5px;color:var(--ink2);margin-top:8px">Bộ chữ mẫu gồm chữ ít nét (人 口), nhiều nét (期), có nét bao (边 月), cấu trúc trái–phải (期) và trên–dưới (交) để bạn thấy đủ các kiểu bút thuận.</div>
+  </div>
+  <div class="sp-wrap">
+   <div class="sp-stage">
+    <div id="wpStage"></div>
+    <div style="text-align:center;margin-top:10px">
+     <span class="zh" style="font-size:24px;font-weight:900">${esc(ch)}</span>
+     <span class="pinyin" style="font-size:15px;margin-left:6px">${esc(info.p||'')}</span>
+     <span class="cl-hv" style="margin-left:6px">${esc(info.hv||'')}</span>
+     <div style="font-size:12.5px;color:var(--ink2)">${esc(info.m||'')}</div></div>
+   </div>
+   <div class="sp-side"><div id="wpCtl"></div></div>
+  </div>`;
+}
+function wPlayerMount(el){
+ const ch=el._pc||'货';
+ mountPlayer($('#wpStage'),$('#wpCtl'),ch,{mode:'all',showDirection:true,
+  cta:`<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="btn btn-primary" onclick="openCharLesson('${ch}',4)">✍ Tự viết chữ này</button>
+   <button class="btn" onclick="openCharLesson('${ch}')">📖 Học đủ 7 bước</button></div>`});
+}
+window.WPC=c=>{const el=$('#view-write');el._pc=c;RENDER.write(el,'player')};
+let _wpcT;window.WPCIN=v=>{clearTimeout(_wpcT);_wpcT=setTimeout(()=>{const c=[...v].find(x=>x>='一'&&x<='鿿');if(c)WPC(c);},400)};
+
+/* ---------- TAB 2: mini-course 8 nét + 7 quy tắc ---------- */
+function wBasicsHTML(el){
+ const i=el._ci||0, s=STROKE_COURSE[i], mode=el._cmode||'watch';
+ const doneN=STROKE_COURSE.filter(x=>S.write.course&&S.write.course[x.k]).length;
+ return hwWarn()+
+ `<div class="card card-pad" style="border-left:4px solid var(--accent);margin-bottom:16px">
+   <b>Học nét bằng cách VIẾT, không phải bằng cách đọc</b>
+   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px">Mỗi bước: xem nét chạy → tự viết lại → hệ thống chấm. Viết đúng không sai nét nào mới sang bước sau. Chữ dùng để luyện đều là chữ THẬT trong kho từ chuyên ngành.</div>
+   <div class="bar" style="margin-top:10px"><i style="width:${Math.round(doneN/STROKE_COURSE.length*100)}%"></i></div>
+   <div style="font-size:12px;color:var(--ink3);margin-top:4px" class="num">${doneN}/${STROKE_COURSE.length} bước hoàn thành</div></div>
+  <div class="cl-steps">${STROKE_COURSE.map((x,k)=>`<button class="cl-step ${S.write.course&&S.write.course[x.k]?'done':k===i?'now':''}" onclick="WCGO(${k})">${k+1}</button>`).join('')}</div>
+  <div class="sp-wrap">
+   <div class="sp-stage"><div id="wcStage"></div>
+    <div class="sp-ctl">
+     <button class="sp-btn ${mode==='watch'?'primary':''}" onclick="WCMODE('watch')" aria-label="Xem nét chạy">▶ Xem</button>
+     <button class="sp-btn ${mode==='write'?'primary':''}" onclick="WCMODE('write')" aria-label="Tự viết">✍ Viết thử</button>
+    </div>
+    <div id="wcCtl"></div>
+   </div>
+   <div class="sp-side">
+    <div class="sp-info">
+     <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+      <span class="chip ${s.type==='stroke'?'chip-mfg':'chip-trade'}">${s.type==='stroke'?'NÉT CƠ BẢN':'QUY TẮC BÚT THUẬN'}</span>
+      <b class="zh" style="font-size:19px">${esc(s.zh)}</b><span class="pinyin">${esc(s.py)}</span></div>
+     <b style="display:block;font-size:15px;margin-top:6px">${esc(s.vi)}</b>
+     <div style="font-size:13.5px;color:var(--ink2);margin-top:5px">${esc(s.tip)}</div>
+     <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:13px">
+      Luyện trên chữ <b class="zh" style="font-size:17px">${esc(s.write)}</b>
+      <span class="cl-hv" style="margin-left:6px">${esc((HV[s.write]||{}).hv||'')}</span>
+      <span style="color:var(--ink2)"> — ${esc((HV[s.write]||{}).m||'')}</span></div>
+     <div id="wcMsg" style="font-size:13px;margin-top:10px;min-height:38px;color:var(--ink3)">${S.write.course&&S.write.course[s.k]?'<span style="color:var(--good);font-weight:700">✓ Đã viết đúng bước này</span><div style="margin-top:4px">'+esc(s.after)+'</div>':'Bấm ▶ Xem để nhìn nét chạy, rồi ✍ Viết thử.'}</div>
+    </div>
+    <div class="lesson-nav">
+     <button class="btn" ${i===0?'disabled':''} onclick="WCGO(${i-1})">← Trước</button>
+     <button class="btn btn-primary" ${i>=STROKE_COURSE.length-1?'disabled':''} onclick="WCGO(${i+1})">Bước tiếp →</button></div>
+   </div></div>`;
+}
+function wBasicsMount(el){
+ const i=el._ci||0,s=STROKE_COURSE[i],mode=el._cmode||'watch';
+ if(mode==='watch'){
+  mountPlayer($('#wcStage'),$('#wcCtl'),s.write,{mode:'slow',showDirection:true,speed:0.75,strip:true});
+ }else{
+  $('#wcCtl').innerHTML=`<div class="sp-ctl"><button class="sp-btn" onclick="wBasicsMount($('#view-write'))" aria-label="Viết lại">↻ Viết lại</button></div>`;
+  const box=$('#wcStage');box.innerHTML='<div class="hzg" id="wcQuiz" style="position:relative"></div>';
+  mountQuiz($('#wcQuiz'),s.write,{outline:true},(ev,d)=>{
+   const msg=$('#wcMsg');if(!msg)return;
+   if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Chưa đúng — đang cần nét thứ ${d.strokeNum+1}.${d.n>=2?' Chấm đỏ là điểm đặt bút.':''}</span>`;
+   if(ev==='done'){
+    if(d===0){S.write.course=S.write.course||{};S.write.course[s.k]=true;S.write.ok[s.write]=true;addXP(4);save();
+     msg.innerHTML=`<span style="color:var(--good);font-weight:700">✓ Chính xác!</span><div style="margin-top:4px">${esc(s.after)}</div>`;
+     setTimeout(()=>{const e=$('#view-write');if(e&&e._ci===i&&(e._ci||0)<STROKE_COURSE.length-1){e._ci=i+1;e._cmode='watch';RENDER.write(e,'basics');}},1800);}
+    else msg.innerHTML=`<span style="color:var(--warn)">Sai ${d} nét — bấm ↻ viết lại cho tới khi đúng hoàn toàn.</span>`;
+   }
+  });
+ }
+}
+window.WCGO=k=>{const el=$('#view-write');el._ci=Math.max(0,Math.min(STROKE_COURSE.length-1,k));el._cmode='watch';RENDER.write(el,'basics')};
+window.WCMODE=m=>{const el=$('#view-write');el._cmode=m;RENDER.write(el,'basics')};
+
+/* ---------- TAB 3: cấu tạo & bộ thủ + bẫy Hán Việt ---------- */
+function wPartsHTML(){
+ const rads=COMPONENTS.filter(c=>c.role==='radical'&&c.chars);
+ const comps=COMPONENTS.filter(c=>c.role==='component'&&c.chars);
+ const card=r=>{
+  const chars=r.chars.split(' ').filter(c=>CHARFREQ[c]).slice(0,8);
+  if(!chars.length)return '';
+  const words=[];chars.forEach(c=>{(CHARWORDS[c]||[]).slice(0,1).forEach(id=>{const w=VMAP[id];if(w&&words.length<4&&!words.find(x=>x.id===w.id))words.push(w);})});
+  return `<div class="card card-pad">
+   <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+    <span class="zh" style="font-size:26px;font-weight:900">${esc(r.g)}</span>
+    <b>${esc(r.n)}</b><span class="chip chip-nego">${esc(r.hv)}</span>
+    <span class="chip ${r.role==='radical'?'chip-mfg':'chip-core'}" style="margin-left:auto">${r.role==='radical'?'gợi NGHĨA':'gợi ÂM / hình'}</span></div>
+   <div style="font-size:13px;color:var(--ink2);margin-top:6px">${esc(r.note)}</div>
+   <div style="margin-top:8px">${chars.map(c=>`<button class="hz-mini" onclick="openChar('${c}')"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}</div>
+   ${words.length?`<div style="margin-top:8px;font-size:12.5px;color:var(--ink2)">Từ dùng: ${words.map(w=>`<span class="rel-chip" onclick="openVocab('${w.id}')">${esc(w.h)}</span>`).join('')}</div>`:''}</div>`;
+ };
+ const trapRow=(g,label,color)=>`<div class="section-label">${label}</div>
+  <div class="card card-pad">${HVTRAP[g].map(t=>`<div class="trap-row">
+    <span class="zh" style="font-size:19px;min-width:64px">${esc(t[0])}</span>
+    <span class="cl-hv" style="min-width:130px;color:${color}">${esc(t[1])}</span>
+    <span style="color:var(--ink3)">→</span><span style="flex:1;min-width:160px">${esc(t[2])}</span></div>`).join('')}</div>`;
+ return hwWarn()+
+ `<div class="card card-pad" style="border-left:4px solid var(--mfg);margin-bottom:16px">
+   <b>Chữ Hán không phải hình vẽ ngẫu nhiên — nó có cấu tạo</b>
+   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Phần lớn chữ = <b>thành phần gợi nghĩa</b> (thường là bộ thủ) + <b>thành phần gợi âm</b>. Biết điều này, bạn đoán được cả nghĩa lẫn cách đọc của chữ chưa từng gặp: 货 = 化 (gợi âm huò) + 贝 (tiền) → thứ đem đổi lấy tiền = hàng hóa. Bấm vào chữ bất kỳ để xem nét viết và cấu tạo đầy đủ.</div></div>
+  <div class="section-label">Thành phần gợi nghĩa — bộ thủ · ${rads.length} bộ</div>
+  <div class="grid g2">${rads.map(card).join('')}</div>
+  <div class="section-label">Thành phần gợi âm / hình · ${comps.length} thành phần</div>
+  <div class="grid g2">${comps.map(card).join('')}</div>
+  <div class="section-label">Âm Hán Việt là CẦU NỐI, không phải bản dịch</div>
+  <div class="card card-pad" style="border-left:4px solid var(--warn)">
+   <div style="font-size:13.5px;color:var(--ink2);line-height:1.7">Người Việt có sẵn một lượng lớn từ Hán-Việt quen thuộc — đó là lợi thế thật. Nhưng đừng suy âm Hán Việt ra nghĩa tiếng Trung hiện đại một cách máy móc: nhiều từ đã đổi nghĩa. Ba nhóm dưới đây cho thấy rõ ranh giới.</div></div>
+  ${trapRow('match','① Khớp hoàn toàn — cứ dùng thẳng âm Hán Việt','var(--good)')}
+  ${trapRow('partial','② Khớp một phần — hiểu được nhưng sắc thái lệch','var(--warn)')}
+  ${trapRow('差','③ KHÁC HẲN — suy theo Hán Việt sẽ sai','var(--bad)')}`;
+}
+
+/* ---------- TAB 4: học & ôn viết (SRS) ---------- */
 function practiceSets(){
  const saved=[...new Set(Object.keys(S.saved).flatMap(id=>[...(VMAP[id]||{h:''}).h]))].filter(c=>CHARFREQ[c]);
- const byInd=ind=>{const set=new Set();V.filter(w=>w.ind===ind).forEach(w=>[...w.h].forEach(c=>set.add(c)));return ALLCHARS.filter(c=>set.has(c)).slice(0,24);};
+ const byInd=ind=>{const s=new Set();V.filter(w=>w.ind===ind).forEach(w=>[...w.h].forEach(c=>s.add(c)));return ALLCHARS.filter(c=>s.has(c)).slice(0,24);};
  return [
   {id:'top20',name:'20 chữ thông dụng nhất',zh:'最常用20字',chars:ALLCHARS.slice(0,20)},
   {id:'l1',name:'Chữ trong từ L1 Essential',zh:'基础字',chars:(()=>{const s=new Set();V.filter(w=>w.lv===1).forEach(w=>[...w.h].forEach(c=>s.add(c)));return ALLCHARS.filter(c=>s.has(c)).slice(0,24)})()},
@@ -5636,114 +6990,163 @@ function practiceSets(){
   {id:'office',name:'Chữ Văn phòng',zh:'办公室',chars:byInd('office')}
  ];
 }
-function writePracticeHTML(el){
- const sets=practiceSets();
- const cur=el._pset;
- if(!cur){
-  return hwWarn()+
-  `<div class="card card-pad" style="border-left:4px solid var(--good);margin-bottom:18px">
-    <b>Luyện viết = tự vẽ từng nét, app chấm đúng/sai</b>
-    <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Dùng chuột (máy tính) hoặc ngón tay (điện thoại) viết theo đúng <b>thứ tự nét</b>. Sai 2 lần một nét sẽ có gợi ý. Chỉ khi viết xong <b>không sai nét nào</b> chữ mới được tính ✓ — đó cũng là điều kiện hoàn thành bước "Luyện viết" trong Lộ trình.</div></div>
-   <div class="grid g3">${sets.map(s=>{
-    const done=s.chars.filter(c=>S.write&&S.write.ok&&S.write.ok[c]).length;
-    return `<div class="card card-pad" style="cursor:${s.chars.length?'pointer':'default'};opacity:${s.chars.length?1:.5}" ${s.chars.length?`onclick="WPSET('${s.id}')"`:''}>
-     <b>${esc(s.name)}</b> <span class="zh" style="color:var(--ink2);font-size:13px">${esc(s.zh)}</span>
-     <div style="font-size:12.5px;color:var(--ink2);margin-top:6px" class="num">${s.chars.length} chữ · đã viết đúng ${done}</div>
-     <div class="bar" style="margin-top:8px"><i style="width:${s.chars.length?Math.round(done/s.chars.length*100):0}%"></i></div>
-     ${!s.chars.length?'<div style="font-size:12px;color:var(--ink3);margin-top:6px">Hãy lưu vài từ vào My Vocabulary trước</div>':''}
-    </div>`}).join('')}</div>`;
- }
- const set=sets.find(s=>s.id===cur.id);const ch=set.chars[cur.i];
- return `<button class="btn btn-ghost btn-sm" onclick="WPBACK()">← Chọn bộ khác</button>
-  <div class="card card-pad" style="max-width:520px;margin:12px auto;text-align:center">
-   <div style="font-size:12px;color:var(--ink3)" class="num">${esc(set.name)} · chữ ${cur.i+1}/${set.chars.length}</div>
-   <div class="bar" style="margin:8px 0 14px"><i style="width:${cur.i/set.chars.length*100}%"></i></div>
-   <div style="display:flex;justify-content:center"><div class="hz-box" id="wpBox"></div></div>
-   <div style="margin-top:12px">
-    <span class="pinyin" style="font-size:15px">${esc((HV[ch]||{}).p||'')}</span>
-    <span class="chip chip-nego" style="margin-left:6px">${esc((HV[ch]||{}).hv||'')}</span>
-    <div style="font-size:13px;color:var(--ink2);margin-top:4px">${esc((HV[ch]||{}).m||'')}</div>
-   </div>
-   <div id="wpMsg" style="min-height:22px;margin-top:10px;font-size:13px;color:var(--ink3)">Viết chữ này theo đúng thứ tự nét</div>
-   <div class="hz-tools">
-    <button class="btn btn-sm" onclick="WPHINT()">💡 Xem nét mẫu</button>
-    <button class="btn btn-sm" onclick="WPRETRY()">↻ Viết lại</button>
-    <button class="btn btn-sm btn-primary" onclick="WPNEXT()">Chữ tiếp →</button>
-   </div>
-  </div>`;
+function wReviewHTML(el){
+ const st=wStats(),due=wDue();
+ return hwWarn()+
+ `<div class="grid g4">
+   <div class="card stat"><div class="stat-val num">${st.ok}</div><div class="stat-label">Chữ từng viết đúng 100%<div style="font-size:10.5px;color:var(--ink3)">Accuracy</div></div></div>
+   <div class="card stat"><div class="stat-val num" style="color:var(--mfg)">${st.total}</div><div class="stat-label">Chữ đang trong lịch ôn<div style="font-size:10.5px;color:var(--ink3)">Mastery đang xây</div></div></div>
+   <div class="card stat"><div class="stat-val num" style="color:var(--warn)">${st.due}</div><div class="stat-label">Đến hạn ôn hôm nay</div></div>
+   <div class="card stat"><div class="stat-val num" style="color:var(--good)">${st.mastered}</div><div class="stat-label">Đã Mastered</div></div></div>
+  <div class="card card-pad" style="margin-top:16px;border-left:4px solid var(--warn)">
+   <b>Viết đúng 100% ≠ đã thuộc chữ</b>
+   <div style="font-size:13.5px;color:var(--ink2);margin-top:6px;line-height:1.7">Vừa xem animation xong viết đúng là chuyện bình thường — ngày mai chưa chắc còn viết được. Vì vậy hệ thống tách riêng: <b>Accuracy</b> (viết đúng nét) và <b>Mastery</b> (nhớ được lâu). Mastery lên cấp qua 6 lần ôn với hỗ trợ giảm dần:</div>
+   <div style="margin-top:10px">${WLV.map(l=>`<div class="cl-bridge"><span class="chip chip-core num">L${l.n}</span><b style="min-width:150px">${esc(l.name)}</b>
+     <span style="flex:1;min-width:160px;font-size:13px;color:var(--ink2)">${esc(l.desc)}</span>
+     <span class="chip chip-good">ôn lại sau ${l.ivLabel}</span></div>`).join('')}</div></div>
+  ${due.length?`<div class="card card-pad" style="margin-top:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px"><b>⏰ ${due.length} chữ đến hạn ôn</b>
+     <div style="font-size:12.5px;color:var(--ink2)">${due.slice(0,14).map(c=>`<span class="zh" style="font-size:16px;margin-right:5px">${esc(c)}</span>`).join('')}${due.length>14?'…':''}</div></div>
+    <button class="btn btn-primary" onclick="WREV()">Bắt đầu ôn viết →</button></div>`
+   :`<div class="card card-pad" style="margin-top:16px;color:var(--good)"><b>✓ Không còn chữ đến hạn ôn.</b> <span style="color:var(--ink2)">Học thêm chữ mới bên dưới, hoặc quay lại sau.</span></div>`}
+  <div class="section-label">Học chữ mới — chọn bộ</div>
+  <div class="grid g3">${practiceSets().map(s=>{
+   const learned=s.chars.filter(c=>S.write.m[c]).length;
+   return `<div class="card card-pad" style="cursor:${s.chars.length?'pointer':'default'};opacity:${s.chars.length?1:.5}" ${s.chars.length?`onclick="WSET('${s.id}')"`:''}>
+    <b>${esc(s.name)}</b> <span class="zh" style="color:var(--ink2);font-size:13px">${esc(s.zh)}</span>
+    <div style="font-size:12.5px;color:var(--ink2);margin-top:6px" class="num">${s.chars.length} chữ · đã học ${learned}</div>
+    <div class="bar" style="margin-top:8px"><i style="width:${s.chars.length?Math.round(learned/s.chars.length*100):0}%"></i></div>
+    ${!s.chars.length?'<div style="font-size:12px;color:var(--ink3);margin-top:6px">Hãy lưu vài từ vào My Vocabulary trước</div>':''}</div>`}).join('')}</div>
+  ${el._wset?`<div class="section-label">${esc(practiceSets().find(s=>s.id===el._wset).name)}</div>
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">
+   ${practiceSets().find(s=>s.id===el._wset).chars.map(c=>{const m=wMastery(c);const i=HV[c]||{};
+    return `<div class="card hz-card" onclick="openCharLesson('${c}')">
+     <div class="hz-char">${esc(c)}</div><div class="pinyin" style="font-size:11.5px">${esc(i.p||'')}</div>
+     <div class="hz-hv">${esc(i.hv||'')}</div>
+     <div style="font-size:10px;margin-top:3px;color:${m.color}">${m.lv?m.name+' '+mstrDots(m.lv):'Chưa học'}</div></div>`}).join('')}</div>`:''}`;
 }
-function mountPractice(el){
- const cur=el._pset;if(!cur)return;
- const set=practiceSets().find(s=>s.id===cur.id);const ch=set.chars[cur.i];
- const box=$('#wpBox');if(!box)return;
- const msg=$('#wpMsg');
- mountHZ(box,ch,'quiz',(ev,val)=>{
-  if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Sai nét ${val} lần${val>=2?' — đã bật gợi ý':''}</span>`;
-  if(ev==='done'){
-   S.write=S.write||{ok:{},tries:{}};S.write.tries[ch]=(S.write.tries[ch]||0)+1;
-   if(val===0){S.write.ok[ch]=true;addXP(3);msg.innerHTML='<span style="color:var(--good);font-weight:700">✓ Hoàn hảo, không sai nét nào!</span>';}
-   else msg.innerHTML=`<span style="color:var(--warn)">Xong nhưng sai ${val} nét — bấm ↻ viết lại để đạt ✓</span>`;
-   save();
-  }
- });
-}
-window.WPSET=id=>{const el=$('#view-write');el._pset={id,i:0};RENDER.write(el,'practice')};
-window.WPBACK=()=>{const el=$('#view-write');el._pset=null;RENDER.write(el,'practice')};
-window.WPRETRY=()=>{const el=$('#view-write');mountPractice(el)};
-window.WPNEXT=()=>{const el=$('#view-write');const set=practiceSets().find(s=>s.id===el._pset.id);
- if(el._pset.i+1>=set.chars.length){el._pset=null;toast('Hoàn thành bộ luyện viết! 🎉');RENDER.write(el,'practice');return;}
- el._pset.i++;RENDER.write(el,'practice');};
-window.WPHINT=()=>{const el=$('#view-write');const set=practiceSets().find(s=>s.id===el._pset.id);const ch=set.chars[el._pset.i];
- const box=$('#wpBox');mountHZ(box,ch,'anim');$('#wpMsg').innerHTML='Xem mẫu xong bấm <b>↻ Viết lại</b> để tự viết';};
+window.WSET=id=>{const el=$('#view-write');el._wset=id;RENDER.write(el,'review')};
 
-/* ================= TÍCH HỢP: nút "cách viết" trong thẻ từ ================= */
+/* ---------- phiên ôn viết: hỗ trợ giảm dần theo cấp ---------- */
+window.WREV=()=>{
+ const queue=wDue();if(!queue.length)return;
+ let i=0;
+ const draw=()=>{
+  if(i>=queue.length){closeModal();toast('Ôn xong '+queue.length+' chữ! 🎉');if(currentView==='write')RENDER.write($('#view-write'),'review');return;}
+  const ch=queue[i],m=wMastery(ch),lv=Math.max(1,m.lv),L=WLV[Math.min(lv-1,WLV.length-1)],info=HV[ch]||{};
+  const w=(CHARWORDS[ch]||[]).map(id=>VMAP[id]).filter(Boolean)[0];
+  let prompt='';
+  if(L.show==='char')prompt=`<div class="zh" style="font-size:44px;font-weight:900">${esc(ch)}</div><div class="pinyin">${esc(info.p||'')}</div>`;
+  if(L.show==='pinyin')prompt=`<div class="pinyin" style="font-size:26px">${esc(info.p||'')}</div><div class="cl-hv" style="font-size:18px">${esc(info.hv||'')}</div>`;
+  if(L.show==='meaning')prompt=`<div style="font-size:20px;font-weight:700">${esc(info.m||info.hv||'')}</div><div style="font-size:12.5px;color:var(--ink3)">(âm Hán Việt: ${esc(info.hv||'')})</div>`;
+  if(L.show==='blank'&&w)prompt=`<div class="zh" style="font-size:30px;font-weight:700">${[...w.h].map(c=>c===ch?'<span style="color:var(--accent)">＿</span>':esc(c)).join('')}</div><div style="font-size:13.5px;color:var(--ink2)">${esc(w.v)}</div>`;
+  if(L.show==='sentence'&&w&&w.ex)prompt=`<div class="zh" style="font-size:19px;line-height:1.6">${esc(w.ex[0]).split(ch).join('<span style="color:var(--accent)">＿</span>')}</div><div style="font-size:12.5px;color:var(--ink2);margin-top:4px">${esc(w.ex[1])}</div>`;
+  if(!prompt)prompt=`<div class="pinyin" style="font-size:24px">${esc(info.p||'')}</div><div class="cl-hv">${esc(info.hv||'')}</div>`;
+  $('#modalBox').innerHTML=`<button class="modal-close" onclick="closeModal()" aria-label="Đóng">✕</button>
+   <div style="text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)">Ôn viết · cấp ${L.n} — ${esc(L.name)}</div>
+    <div class="num" style="font-size:12px;color:var(--ink3)">chữ ${i+1}/${queue.length}</div>
+    <div class="bar" style="margin:8px 0 14px"><i style="width:${i/queue.length*100}%"></i></div>
+    <div style="min-height:70px">${prompt}</div>
+    <div style="font-size:12.5px;color:var(--ink3);margin:8px 0">${esc(L.desc)} — viết chữ vào ô dưới</div>
+    <div style="max-width:240px;margin:0 auto"><div class="hzg" id="wrQuiz" style="position:relative"></div></div>
+    <div id="wrMsg" style="min-height:34px;margin-top:10px;font-size:13px;color:var(--ink3)"></div>
+    <div class="sp-ctl"><button class="sp-btn" onclick="WREVQ()" aria-label="Viết lại">↻ Viết lại</button>
+     <button class="sp-btn" onclick="WREVSKIP()" aria-label="Chưa nhớ">Chưa nhớ, xem đáp án</button></div>
+   </div>`;
+  $('#modalScrim').classList.add('show');
+  window.WREVQ=()=>mountQuiz($('#wrQuiz'),ch,{outline:L.outline},(ev,d)=>{
+   const msg=$('#wrMsg');if(!msg)return;
+   if(ev==='mistake')msg.innerHTML=`<span style="color:var(--warn)">Chưa đúng — cần nét thứ ${d.strokeNum+1}${d.n>=2?' (chấm đỏ = điểm đặt bút)':''}</span>`;
+   if(ev==='done'){
+    const ok=d===0;wPromote(ch,ok);if(ok){S.write.ok[ch]=true;addXP(4);}save();
+    const nm=wMastery(ch);
+    msg.innerHTML=ok?`<span style="color:var(--good);font-weight:700">✓ Đúng!</span> ${nm.name} — ôn lại sau ${WLV[Math.min(nm.lv-1,WLV.length-1)].ivLabel}`
+      :`<span style="color:var(--warn)">Sai ${d} nét — hạ một cấp, sẽ ôn lại sau 10 phút</span>`;
+    setTimeout(()=>{i++;draw();},1500);
+   }
+  });
+  window.WREVSKIP=()=>{wPromote(ch,false);save();
+   $('#wrMsg').innerHTML=`<span class="zh" style="font-size:26px">${esc(ch)}</span> — ${esc(info.hv||'')} · ${esc(info.m||'')}`;
+   setTimeout(()=>{i++;draw();},1800);};
+  WREVQ();
+ };
+ draw();
+};
+
+/* =====================================================================
+   TÍCH HỢP CHÉO: thẻ từ vựng → cách viết từng chữ (spec §15)
+   ===================================================================== */
 const _openVocab0=window.openVocab;
 window.openVocab=id=>{
+ destroyPlayers();
  _openVocab0(id);
  const w=VMAP[id];if(!w)return;
  const chars=[...w.h].filter(c=>c>='一'&&c<='鿿');
  if(!chars.length)return;
- const box=$('#modalBox');
- box.insertAdjacentHTML('beforeend',
-  `<div class="mrow"><b>Cách viết</b><div>
-   <div style="font-size:12.5px;color:var(--ink2);margin-bottom:6px">Bấm từng chữ để xem thứ tự nét, số nét và tự viết thử:</div>
-   ${chars.map(c=>`<button class="hz-mini" onclick="openChar('${c}')"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}
-   <div style="font-size:12.5px;color:var(--ink2);margin-top:8px">Âm Hán Việt cả từ: <b style="color:var(--accent-ink);letter-spacing:.03em">${chars.map(c=>(HV[c]||{}).hv||'?').join(' ')}</b></div>
+ $('#modalBox').insertAdjacentHTML('beforeend',
+  `<div class="mrow"><b>Cách viết</b><div style="flex:1">
+   <div style="font-size:12.5px;color:var(--ink2);margin-bottom:6px">Âm Hán Việt cả từ: <b class="cl-hv">${chars.map(c=>(HV[c]||{}).hv||'?').join(' ')}</b> <span style="color:var(--ink3)">(cầu nối trí nhớ, không phải bản dịch)</span></div>
+   <div id="vwPick">${chars.map((c,k)=>`<button class="hz-mini" onclick="VWSEL(${k})" data-k="${k}"><b>${esc(c)}</b><span>${esc((HV[c]||{}).hv||'')}</span></button>`).join('')}</div>
+   <div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="VWOPEN('${chars[0]}')">✍ Xem cách viết & tự luyện</button></div>
+   <div id="vwBody" style="margin-top:12px"></div>
   </div></div>`);
+ window.VWSEL=k=>{const c=chars[k];
+  document.querySelectorAll('#vwPick .hz-mini').forEach(b=>b.style.borderColor=+b.dataset.k===k?'var(--accent)':'');
+  vwRender(c);};
+ window.VWOPEN=c=>vwRender(c);
+ function vwRender(c){
+  const info=HV[c]||{};
+  $('#vwBody').innerHTML=`<div class="sp-wrap" style="gap:14px">
+    <div style="flex:0 0 190px;max-width:190px;width:100%"><div id="vwStage"></div></div>
+    <div style="flex:1;min-width:190px">
+     <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+      <span class="zh" style="font-size:24px;font-weight:900">${esc(c)}</span>
+      <span class="pinyin">${esc(info.p||'')}</span><span class="cl-hv">${esc(info.hv||'')}</span>
+      <span class="chip chip-core" id="vwCount">— nét</span></div>
+     <div id="vwCtl"></div></div></div>`;
+  destroyPlayers();
+  mountPlayer($('#vwStage'),$('#vwCtl'),c,{mode:'all',autoplay:true,
+   cta:`<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <button class="btn btn-sm btn-primary" onclick="openCharLesson('${c}',4)">✍ Tự luyện viết</button>
+    <button class="btn btn-sm" onclick="openChar('${c}')">Chi tiết chữ →</button></div>`});
+  charData(c).then(d=>{const e=$('#vwCount');if(e)e.textContent=d.strokes.length+' nét';}).catch(()=>{});
+ }
 };
-
-/* ================= TÍCH HỢP LỘ TRÌNH ================= */
+/* =====================================================================
+   LỘ TRÌNH + TRỢ GIÚP + KHỞI ĐỘNG
+   ===================================================================== */
 QUIZMAP.s1f={type:'stroke'};
 QUIZMAP.s2f={type:'radical'};
 EXTDONE.write=n=>Object.keys((S.write&&S.write.ok)||{}).length>=+n;
 EXTQUIZ.stroke=(mk,sh)=>sh(WQUIZ_STROKE).slice(0,10).map(q=>{const opts=sh(q[1].map((t,i)=>({t,ok:i===q[2]})));return {prompt:q[0],sub:'',opts:opts.map(o=>o.t),a:opts.findIndex(o=>o.ok),plain:true};});
 EXTQUIZ.radical=(mk,sh)=>{
- const pool=RADICALS.map(r=>r[3]);
- const qs=sh(RADICALS).slice(0,6).map(r=>{const q=mk(r[0]+'  ( '+r[1]+' )','Bộ thủ này gợi ý nghĩa gì?',r[3],pool);q.plain=true;return q;});
+ const rs=COMPONENTS.filter(c=>c.role==='radical'&&c.chars),pool=rs.map(r=>r.m);
+ const qs=sh(rs).slice(0,6).map(r=>{const q=mk(r.g+'  ( '+r.n+' )','Bộ thủ này gợi nghĩa gì?',r.m,pool);q.plain=true;return q;});
  const hvPool=ALLCHARS.slice(0,120).map(c=>(HV[c]||{}).hv).filter(Boolean);
- const hvq=sh(ALLCHARS.slice(0,80)).slice(0,4).map(c=>{const q=mk(c,'Âm Hán Việt của chữ này là gì?',(HV[c]||{}).hv,hvPool);return q;});
- return qs.concat(hvq);
+ return qs.concat(sh(ALLCHARS.slice(0,80)).slice(0,4).map(c=>mk(c,'Âm Hán Việt của chữ này là gì?',(HV[c]||{}).hv,hvPool)));
 };
-EXTOUT.stroke=()=>['Gọi tên và viết đúng 8 nét cơ bản (ngang, sổ, phẩy, mác, chấm, hất, gập, móc)','Áp dụng 7 quy tắc bút thuận cho mọi chữ mới gặp','Vượt bài kiểm tra 10 câu về nét & bút thuận (100%)'];
-EXTOUT.radical=()=>['Nhận ra 24 bộ thủ hay gặp nhất trong tiếng Trung công sở','Đoán được nghĩa của chữ lạ nhờ bộ thủ (thấy 贝 → tiền bạc, thấy 扌 → động tác tay)','Dùng âm Hán Việt làm cầu nối để nhớ chữ','Vượt bài kiểm tra bộ thủ + Hán Việt (100%)'];
-EXTCONTENT.stroke=()=>{setTimeout(mountBasics,0);return writeBasicsHTML();};
-EXTCONTENT.radical=()=>{setTimeout(mountRadicals,0);return writeRadicalHTML();};
-ROADMAP2[0].steps.push({k:'s1f',t:'Nét cơ bản & 7 quy tắc bút thuận',d:'8 nét gốc của mọi chữ Hán + 7 quy tắc thứ tự viết, có video từng nét. Đây là nền để viết được BẤT KỲ chữ nào.',go:['write','basics'],tag:'Học'});
-ROADMAP2[1].steps.push({k:'s2f',t:'Bộ thủ & âm Hán Việt — cách nhớ chữ của người Việt',d:'24 bộ thủ hay gặp nhất + cách dùng âm Hán Việt làm cầu nối. Học xong bạn đoán được nghĩa chữ chưa từng gặp.',go:['write','radical'],tag:'Học'});
-ROADMAP2[2].steps.push({k:'s3g',t:'Luyện viết tay 15 chữ Hán',d:'Tự viết từng nét bằng chuột/ngón tay, app chấm đúng sai. Cần 15 chữ viết đúng hoàn toàn (không sai nét nào).',go:['write','practice'],auto:'write:15',tag:'Luyện'});
-ROADMAP2[4].steps.push({k:'s5f',t:'Luyện viết tay đủ 30 chữ Hán',d:'Nâng tổng số chữ tự viết đúng lên 30 — đủ vốn để ghi chép tay cơ bản tại nơi làm việc.',go:['write','practice'],auto:'write:30',tag:'Luyện'});
-
-/* trợ giúp */
+EXTOUT.stroke=()=>['Gọi tên và tự VIẾT được 8 nét cơ bản','Áp dụng 7 quy tắc bút thuận cho chữ mới gặp','Viết đúng 15 chữ luyện tập, không sai nét nào','Vượt kiểm tra 10 câu về nét & bút thuận (100%)'];
+EXTOUT.radical=()=>['Nhận ra các bộ thủ gợi nghĩa và thành phần gợi âm','Đoán được nghĩa chữ lạ nhờ bộ thủ (贝 → tiền, 扌 → tay)','Dùng âm Hán Việt làm cầu nối mà KHÔNG nhầm thành bản dịch','Vượt kiểm tra bộ thủ + Hán Việt (100%)'];
+EXTCONTENT.stroke=()=>`<div class="card card-pad" style="margin-bottom:14px"><b>Khoá học nét — ${STROKE_COURSE.length} bước, mỗi bước tự viết</b>
+  <div style="font-size:13.5px;color:var(--ink2);margin-top:6px">8 nét cơ bản + 7 quy tắc bút thuận, luyện trên chữ thật trong kho từ: ${STROKE_COURSE.map(s=>`<span class="zh" style="font-size:16px;margin-right:4px">${s.write}</span>`).join('')}</div>
+  <button class="btn btn-primary" style="margin-top:10px" onclick="GO('write','basics')">Mở khoá học nét →</button></div>`;
+EXTCONTENT.radical=()=>`<div class="card card-pad" style="margin-bottom:14px"><b>Cấu tạo chữ, bộ thủ và bẫy Hán Việt</b>
+  <div style="font-size:13.5px;color:var(--ink2);margin-top:6px">${COMPONENTS.filter(c=>c.chars).length} thành phần cấu tạo (gợi nghĩa + gợi âm), kèm 3 nhóm đối chiếu âm Hán Việt: khớp hoàn toàn / khớp một phần / khác hẳn.</div>
+  <button class="btn btn-primary" style="margin-top:10px" onclick="GO('write','parts')">Mở phần cấu tạo →</button></div>`;
+ROADMAP2[0].steps.push({k:'s1f',t:'Nét cơ bản & 7 quy tắc bút thuận',d:'Khoá 15 bước: xem nét chạy → tự viết → app chấm. Nền để viết được bất kỳ chữ nào.',go:['write','basics'],tag:'Học'});
+ROADMAP2[1].steps.push({k:'s2f',t:'Cấu tạo chữ, bộ thủ & âm Hán Việt',d:'Đoán nghĩa chữ lạ nhờ bộ thủ; dùng Hán Việt làm cầu nối mà không nhầm thành bản dịch.',go:['write','parts'],tag:'Học'});
+ROADMAP2[2].steps.push({k:'s3g',t:'Tự viết đúng 15 chữ Hán',d:'Viết bằng chuột/ngón tay, không sai nét nào mới được tính.',go:['write','review'],auto:'write:15',tag:'Luyện'});
+ROADMAP2[4].steps.push({k:'s5f',t:'Tự viết đúng đủ 30 chữ Hán',d:'Đủ vốn chữ để ghi chép tay cơ bản tại nơi làm việc.',go:['write','review'],auto:'write:30',tag:'Luyện'});
 HELP.splice(3,0,
- {v:'write',q:'Học viết chữ Hán trong app thế nào?',a:'Mục <b>Viết chữ Hán</b> có 4 phần: <b>Nét & quy tắc</b> (8 nét cơ bản + 7 quy tắc bút thuận, có video từng nét) → <b>Bộ thủ</b> (24 bộ hay gặp, giúp đoán nghĩa chữ lạ) → <b>Tra chữ</b> (tra bất kỳ chữ nào trong kho: nét viết, số nét, âm Hán Việt, từ chứa chữ đó) → <b>Luyện viết</b> (tự vẽ từng nét, app chấm đúng/sai). Trong thẻ từ vựng cũng có mục "Cách viết" — bấm từng chữ là xem được ngay.',go:['write']},
- {q:'Âm Hán Việt dùng để làm gì?',a:'Đây là lợi thế riêng của người Việt. 交货期 đọc Hán Việt là <b>GIAO HÓA KỲ</b> — nghe là đoán ra "kỳ hạn giao hàng" ngay, không cần học vẹt. App hiện âm Hán Việt cho tất cả 851 chữ trong kho từ; gặp chữ mới hãy đọc thầm âm Hán Việt trước khi tra nghĩa.'},
- {q:'Ô tập viết không hiện / không vẽ được?',a:'Phần nét viết dùng thư viện tải từ internet nên cần có mạng. Nếu mất mạng, app vẫn hiện quy tắc bút thuận, bộ thủ, âm Hán Việt và chữ mẫu cỡ lớn. Trên điện thoại hãy viết bằng <b>ngón tay</b> trực tiếp lên ô vuông; trên máy tính giữ chuột trái và kéo theo nét.'}
+ {v:'write',q:'Xem thứ tự nét và tự luyện viết thế nào?',a:'Mục <b>Viết chữ Hán</b> có 5 phần: <b>Thứ tự nét</b> (xem chữ được viết từng nét trong ô 米字格 — nét đang viết màu đỏ, nét đã viết màu đen, nét chưa viết mờ; có Play/Pause, tua từng nét, đổi tốc độ, và dải "xem từng bước" bấm được để nhảy tới nét bất kỳ) → <b>Nét & quy tắc</b> (khoá 15 bước, mỗi bước phải tự viết đúng) → <b>Cấu tạo & bộ thủ</b> → <b>Tra chữ</b> → <b>Học & ôn viết</b>. Trong thẻ từ vựng cũng có mục "Cách viết".',go:['write']},
+ {q:'Viết đúng 100% rồi sao vẫn phải ôn lại?',a:'Vì <b>viết đúng ≠ đã thuộc</b>. App tách riêng <b>Accuracy</b> (viết đúng nét ngay lúc đó) và <b>Mastery</b> (nhớ được lâu dài). Mastery lên qua 6 lần ôn với hỗ trợ giảm dần: viết theo mẫu → không mẫu → chỉ cho pinyin → chỉ cho nghĩa → điền chữ thiếu trong từ → viết chữ trong câu công việc. Khoảng cách ôn giãn dần 10 phút → 1 → 3 → 7 → 14 → 30 ngày.'},
+ {q:'Âm Hán Việt có phải là nghĩa của từ không?',a:'KHÔNG. Nó là <b>cầu nối trí nhớ</b>. Có từ khớp hoàn toàn (质量 = CHẤT LƯỢNG), có từ khớp một phần (方便 PHƯƠNG TIỆN = tiện lợi), và có từ khác hẳn (经理 KINH LÝ = <b>giám đốc</b>, 出差 XUẤT SAI = <b>đi công tác</b>). Xem bảng 3 nhóm trong tab "Cấu tạo & bộ thủ".',go:['write','parts']}
 );
-/* onboarding: thêm màn giới thiệu viết chữ */
-OB.splice(3,0,{h:'书',t:'Và cả cách VIẾT từng chữ',b:'Mục <b>Viết chữ Hán</b> dạy 8 nét cơ bản, 7 quy tắc bút thuận, 24 bộ thủ, và cho bạn <b>tự viết từng nét bằng ngón tay</b> — app chấm đúng sai. Mỗi chữ đều có <b>âm Hán Việt</b>: lợi thế riêng của người Việt để nhớ chữ nhanh gấp nhiều lần.'});
+OB.splice(3,0,{h:'书',t:'Và cả cách VIẾT từng chữ',b:'Mục <b>Viết chữ Hán</b> cho bạn xem chữ được viết <b>từng nét đúng thứ tự</b> trong ô 米字格, tua tới lui từng nét, rồi <b>tự viết bằng ngón tay</b> — app chấm từng nét. Mỗi chữ có cấu tạo, âm Hán Việt và lịch ôn riêng.'});
 
 /* ================= INIT ================= */
-S.write=S.write||{ok:{},tries:{}};
+wInit();
 S.visits++;save();
 $('#xpFoot').textContent=S.xp+' XP';
 buildHelp();
