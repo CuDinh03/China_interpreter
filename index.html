@@ -4960,28 +4960,30 @@ function buildQuiz(spec){
  };
  let qs=[];
  if(EXTQUIZ[spec.type])return EXTQUIZ[spec.type](mk,shuffleA);
+ /* Trong bài KIỂM TRA không hiện phiên âm (pinyin) — người học phải tự đọc
+    được chữ Hán; phiên âm chỉ hiện ở phần học, không hiện lúc làm bài. */
  if(spec.type==='vocab'){
   let ws=V.filter(w=>w.ind===spec.ind&&(!spec.gs||spec.gs.includes(w.g)));
   const pool=ws.map(w=>w.v);
-  qs=shuffleA(ws).slice(0,10).map(w=>mk(w.h,w.p,w.v,pool));
+  qs=shuffleA(ws).slice(0,10).map(w=>mk(w.h,'',w.v,pool));
  }
  if(spec.type==='sent'){
   const ss=SENTENCES.filter(s=>s[3]===spec.ind);const pool=ss.map(s=>s[2]);
-  qs=shuffleA(ss).slice(0,8).map(s=>mk(s[0],s[1],s[2],pool));
+  qs=shuffleA(ss).slice(0,8).map(s=>mk(s[0],'',s[2],pool));
  }
  if(spec.type==='phrase'){
   const pool=PHRASES.map(p=>p[2]);
-  qs=shuffleA(PHRASES).slice(0,8).map(p=>mk(p[0],p[1],p[2],pool));
+  qs=shuffleA(PHRASES).slice(0,8).map(p=>mk(p[0],'',p[2],pool));
  }
  if(spec.type==='dlg'){
   let lines=[];spec.ids.forEach(id=>{const d=DMAP[id];d&&d.lines.forEach(L=>{if(L[1].length>5&&L[3].length>8)lines.push(L);});});
   const pool=lines.map(L=>L[3]);
-  qs=shuffleA(lines).slice(0,8).map(L=>mk(L[1],L[2],L[3],pool));
+  qs=shuffleA(lines).slice(0,8).map(L=>mk(L[1],'',L[3],pool));
  }
  if(spec.type==='negoexpr'){
   let ex=[];NEGO.filter(n=>spec.ids.includes(n.id)).forEach(n=>ex=ex.concat(n.expr));
   const pool=ex.map(e=>e[2]);
-  qs=shuffleA(ex).slice(0,8).map(e=>mk(e[0],e[1],e[2],pool));
+  qs=shuffleA(ex).slice(0,8).map(e=>mk(e[0],'',e[2],pool));
  }
  if(spec.type==='interpq'){
   const set=INTERP.find(x=>x.id===spec.set);
@@ -4989,7 +4991,7 @@ function buildQuiz(spec){
   const poolZh=set.items.filter(x=>x.dir==='vz').map(x=>x.ans);
   const extraVi=SENTENCES.map(s=>s[2]),extraZh=SENTENCES.map(s=>s[0]);
   qs=shuffleA(set.items).map(it=>{
-   if(it.dir==='zv'){const q=mk(it.src,it.p||'',it.ans,poolVi.length>3?poolVi:poolVi.concat(extraVi));q.plain=false;return q;}
+   if(it.dir==='zv'){const q=mk(it.src,'',it.ans,poolVi.length>3?poolVi:poolVi.concat(extraVi));q.plain=false;return q;}
    const q=mk(it.src,'→ Chọn câu tiếng Trung dịch đúng',it.ans,poolZh.length>3?poolZh:poolZh.concat(extraZh));q.plain=true;q.zhOpts=true;return q;});
  }
  if(spec.type==='mist'){
